@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendored, minified Draco decoder served as-is for the tower's GLB.
     "public/draco/**",
+    // bar-martiri/ is its own Vite project with its own config; the Next rules do not apply to it.
+    "bar-martiri/**",
   ]),
 ]);
 

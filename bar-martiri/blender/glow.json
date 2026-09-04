@@ -1,0 +1,169 @@
+{
+ "palette": {
+  "pink": {
+   "color": "#ff2f9c",
+   "gain": 1.25,
+   "bloom": true
+  },
+  "cyan": {
+   "color": "#28e7ff",
+   "gain": 1.2,
+   "bloom": true
+  },
+  "green": {
+   "color": "#41ff8f",
+   "gain": 1.2,
+   "bloom": true
+  },
+  "yellow": {
+   "color": "#ffd23a",
+   "gain": 1.15,
+   "bloom": true
+  },
+  "orange": {
+   "color": "#ff8c2a",
+   "gain": 1.1,
+   "bloom": true
+  },
+  "red": {
+   "color": "#ff3b5c",
+   "gain": 1.1,
+   "bloom": true
+  },
+  "blue": {
+   "color": "#3d6bff",
+   "gain": 1.1,
+   "bloom": true
+  },
+  "white": {
+   "color": "#f2f4ff",
+   "gain": 0.75,
+   "bloom": false
+  },
+  "globe": {
+   "color": "#ffe4fb",
+   "gain": 0.8,
+   "bloom": true
+  },
+  "lantern": {
+   "color": "#ffe3a8",
+   "gain": 0.8,
+   "bloom": true
+  },
+  "holo": {
+   "color": "#3cf5ff",
+   "gain": 0.9,
+   "bloom": true
+  },
+  "platePink": {
+   "color": "#ff2f7a",
+   "gain": 1.0,
+   "bloom": false
+  },
+  "plateCyan": {
+   "color": "#27dcff",
+   "gain": 1.0,
+   "bloom": false
+  },
+  "plateGreen": {
+   "color": "#45ff96",
+   "gain": 1.0,
+   "bloom": false
+  },
+  "plateOrange": {
+   "color": "#ff9d2a",
+   "gain": 1.0,
+   "bloom": false
+  },
+  "plateRed": {
+   "color": "#ff3a5f",
+   "gain": 1.0,
+   "bloom": false
+  },
+  "plateWhite": {
+   "color": "#f8f6ff",
+   "gain": 0.5,
+   "bloom": true
+  },
+  "vendGlow": {
+   "color": "#dcf6ff",
+   "gain": 0.7,
+   "bloom": true
+  },
+  "vendHeader": {
+   "color": "#8fe9ff",
+   "gain": 0.6,
+   "bloom": true
+  },
+  "ledCyan": {
+   "color": "#5df3ff",
+   "gain": 0.9,
+   "bloom": true
+  },
+  "ledRed": {
+   "color": "#ff4a5a",
+   "gain": 0.9,
+   "bloom": true
+  },
+  "ledGreen": {
+   "color": "#5cff8a",
+   "gain": 0.9,
+   "bloom": true
+  },
+  "ledWhite": {
+   "color": "#ffffff",
+   "gain": 0.8,
+   "bloom": true
+  }
+ },
+ "objects": {
+  "neonKanji": "orange",
+  "lantern0": "lantern",
+  "lantern1": "lantern",
+  "neonFrame": "orange",
+  "neonName": "cyan",
+  "neonOpen": "green",
+  "arcadeBtnA": "ledGreen",
+  "arcadeBtnB": "ledCyan",
+  "arcadeCoin": "ledRed",
+  "arcadeRimL": "cyan",
+  "arcadeRimR": "cyan",
+  "arcadeRimT": "cyan",
+  "vendHeader": "vendHeader",
+  "vendBtn_prev": "plateWhite",
+  "vendBtn_next": "plateWhite",
+  "vendGlow": "vendGlow",
+  "portalStrip": "cyan",
+  "holoRing": "holo",
+  "ringLamp0": "white",
+  "ringLamp1": "white",
+  "ringLamp2": "white",
+  "ringLamp3": "white",
+  "fluoTube0": "white",
+  "fluoTube1": "white",
+  "fluoTube2": "white",
+  "fluoTube3": "white",
+  "neonCone": "orange",
+  "neonConeHatch0": "orange",
+  "neonConeHatch1": "orange",
+  "neonScoop0": "pink",
+  "neonScoop1": "pink",
+  "neonCherry": "red",
+  "poleTip": "ledCyan",
+  "globe0": "globe",
+  "globe1": "globe",
+  "poleLed0": "ledCyan",
+  "poleLed1": "ledRed",
+  "poleLed2": "ledGreen",
+  "poleLed3": "ledWhite",
+  "poleLed4": "ledGreen",
+  "poleLed5": "ledRed",
+  "plate_projects": "platePink",
+  "plate_contact": "plateRed",
+  "plate_about": "plateCyan",
+  "plate_credits": "plateOrange",
+  "plate_name": "platePink",
+  "plate_green": "plateGreen",
+  "greenDot": "ledRed"
+ }
+}

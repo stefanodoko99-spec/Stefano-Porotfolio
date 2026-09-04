@@ -1,0 +1,14 @@
+{
+  "name": "Stefano Doko",
+  "shortName": "s. doko",
+  "shop": "BAR MARTIRI",
+  "roles": ["Web designer and developer", "Design and build, end to end"],
+  "signs": {
+    "projects": "projects",
+    "about": "about me",
+    "contact": "contact",
+    "credits": "credits"
+  },
+  "kanji": "SPILLE",
+  "open": "OPEN"
+}

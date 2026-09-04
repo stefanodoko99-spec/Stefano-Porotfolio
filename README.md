@@ -253,3 +253,26 @@ asks for it, so the half megabyte is not part of any page load.
 
 Archivo and Martian Mono are vendored in `app/fonts/`. See
 [app/fonts/README.md](app/fonts/README.md) for attribution and licensing.
+
+## Bar Martiri, the second portfolio
+
+`bar-martiri/` is a separate site kept in this repository as its own project:
+a night diorama of Bar Martiri, the beach bar at Spille, built after
+jesse-zhou.com's ramen stall, with the four sections read off screens inside
+the scene (the projects in a vending machine, about on the big screen, the
+credits on an arcade cabinet, contact through this site's form). It is a Vite
+and three.js app with a Blender pipeline of its own. Nothing in it is imported
+by the Next.js site, and the root `tsconfig.json` and `eslint.config.mjs`
+leave it alone.
+
+```bash
+cd bar-martiri
+npm install
+npm run dev      # http://localhost:5192
+npm run build    # bar-martiri/dist
+```
+
+Its own [README](bar-martiri/README.md) and [SPEC.md](bar-martiri/SPEC.md)
+describe the pipeline and the light. The words it shows live in
+`bar-martiri/src/content.ts` and `bar-martiri/src/content/labels.json` and are
+the copy already in this site's dictionary; nothing was invented for it.

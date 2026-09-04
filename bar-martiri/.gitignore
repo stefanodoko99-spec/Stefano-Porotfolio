@@ -1,0 +1,8 @@
+node_modules/
+dist/
+blender/*.blend
+blender/*.blend1
+blender/*.log
+blender/preview_*.png
+.DS_Store
+.gstack/
