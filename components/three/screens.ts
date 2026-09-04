@@ -25,6 +25,24 @@ export type Painter = {
   h: number
   /** Repaints per second. 0 paints once and never again. */
   fps: number
+  /**
+   * Device pixels per authored pixel.
+   *
+   * Every painter below draws in a coordinate space chosen for the layout —
+   * "the title sits 48 down from the top" — and those numbers were also the
+   * canvas's real size, so the resolution of a screen and the readability of
+   * the code that draws it were the same decision. They are not the same
+   * decision. A screen you can walk up to and stand in front of wants twice
+   * the pixels; rewriting a hundred hand-placed coordinates to get them is how
+   * a layout picks up bugs.
+   *
+   * So the canvas is allocated at w*scale by h*scale and the context is left
+   * pre-scaled: the painters keep their own coordinates and land on a sheet
+   * with four times the texels. The cabinet's own screen deliberately stays at
+   * 1 — the games behind it are a 320x240 grid of squares, and the pixels are
+   * the point.
+   */
+  scale?: number
   paint: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => void
 }
 
@@ -127,6 +145,7 @@ export function makeBillboard(copy: Billboard): Painter {
     w: 1024,
     h: 460,
     fps: 1,
+    scale: 2,
     paint(ctx, w, h, t) {
       ground(ctx, w, h, '#07080d')
       ctx.fillStyle = NEON.blue
@@ -197,6 +216,7 @@ export const SCREEN_PAINTERS: Record<string, Painter> = {
     w: 512,
     h: 396,
     fps: 8,
+    scale: 2,
     paint(ctx, w, h, t) {
       ground(ctx, w, h)
       text(ctx, 'DIAG · OBD-II', 28, 48, 26, NEON.blue, { weight: 700, spacing: 3 })
@@ -226,10 +246,48 @@ export const SCREEN_PAINTERS: Record<string, Painter> = {
   },
 
   // The vending machine's front: a menu of selections and a prompt.
+  /**
+   * The second cabinet, which nobody is playing.
+   *
+   * It could have been another attract loop, and two of those side by side is
+   * two things asking to be watched — the one on the left is the one you can
+   * walk into, and it has to win. So this one shows what a cabinet shows
+   * between games instead: the table, the initials, and a row that scrolls up
+   * one place every few seconds so the glass is alive without being a second
+   * claim on the eye.
+   */
+  arcadeBScreen: {
+    w: 320,
+    h: 240,
+    fps: 4,
+    paint(ctx, w, h, t) {
+      ground(ctx, w, h, '#04070a')
+      text(ctx, 'HIGH SCORES', w / 2, 30, 20, NEON.yellow, { weight: 700, align: 'center', spacing: 3 })
+      ctx.fillStyle = 'rgba(255,246,104,0.30)'
+      ctx.fillRect(38, 40, w - 76, 1)
+      const board: [string, number][] = [
+        ['SDK', 128400], ['LRA', 96750], ['AAA', 71200],
+        ['MIL', 54900], ['ZZZ', 33150], ['CPU', 12080],
+      ]
+      // One row is lit at a time, walking down the table and round again: the
+      // cheapest motion that reads as a machine still switched on.
+      const lit = Math.floor(t / 2.2) % board.length
+      board.forEach(([who, score], i) => {
+        const y = 72 + i * 26
+        const on = i === lit
+        text(ctx, String(i + 1).padStart(2, '0'), 40, y, 17, on ? NEON.white : 'rgba(244,246,255,0.34)')
+        text(ctx, who, 82, y, 17, on ? NEON.pink : 'rgba(255,47,213,0.42)', { weight: 700, spacing: 2 })
+        text(ctx, score.toLocaleString('en-GB'), w - 40, y, 17, on ? NEON.green : 'rgba(30,255,81,0.40)', { align: 'right' })
+      })
+      if (blink(t, 1.4)) text(ctx, 'PRESS START', w / 2, h - 24, 16, NEON.blue, { weight: 700, align: 'center', spacing: 4 })
+      crt(ctx, w, h)
+    },
+  },
   vendScreen: {
     w: 320,
     h: 694,
     fps: 2,
+    scale: 2,
     paint(ctx, w, h, t) {
       ground(ctx, w, h, '#06070f')
       ctx.fillStyle = NEON.blue
@@ -347,6 +405,7 @@ export const SCREEN_PAINTERS: Record<string, Painter> = {
     w: 384,
     h: 500,
     fps: 0,
+    scale: 2,
     paint(ctx, w, h) {
       ground(ctx, w, h, '#151516')
       ctx.strokeStyle = '#e8e2c8'
@@ -389,6 +448,7 @@ export const SCREEN_PAINTERS: Record<string, Painter> = {
     w: 460,
     h: 340,
     fps: 2,
+    scale: 2,
     paint(ctx, w, h, t) {
       ground(ctx, w, h, '#0b0b0d')
       ctx.fillStyle = NEON.bank

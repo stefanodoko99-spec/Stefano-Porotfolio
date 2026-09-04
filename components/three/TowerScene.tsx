@@ -690,6 +690,12 @@ const BAKED: Record<string, keyof typeof SCENE> = {
 }
 const EMISSIVE_RULES: readonly (readonly [RegExp, string])[] = [
   [/^(neonPink|neonPinkArcade|ledStripBench)$/, PALETTE.pink],
+  // The two cabinets in the corner: each one's marquee, the strips down its
+  // front edges, its coin slot and the wash it throws on the floor, all one
+  // colour, because a machine that glows in three is a Christmas tree.
+  [/^arcA(Edge[LR]|Under|Coin)$/, PALETTE.pink],
+  [/^arcB(Edge[LR]|Under|Coin)$/, PALETTE.blue],
+  [/^lanternGlow\d$/, PALETTE.orange],
   // The traffic light's three lamps. Their colours are swapped every few
   // seconds in the frame loop; these are the colours they start with.
   [/^trafficRed$/, PALETTE.red],
@@ -699,8 +705,8 @@ const EMISSIVE_RULES: readonly (readonly [RegExp, string])[] = [
   [/^[GBMF]lamp[LRB]Bulb$|^FbillboardLamp\d$|^MroofBulb\d$|^deckBulb\d+$|^lampGlobe[LR]\d$|^parkedHead[LR]$/, PALETTE.warm],
   [/^BantennaLED$/, PALETTE.red],
   [/^neonOrangeBar$/, PALETTE.orange],
-  [/^(neonBlue|neonBlueSpille|storageLight|vendLight)$/, PALETTE.blue],
-  [/^(neonYellow|neonYellowBank|poleLight|atmLight|atmOutLight|madonnina)$/, PALETTE.yellow],
+  [/^(neonBlue|neonBlueArcade|neonBlueSpille|storageLight|vendLight|vendUnder|vendEdge[LR])$/, PALETTE.blue],
+  [/^(neonYellow|neonYellowArcade|neonYellowBank|poleLight|atmLight|atmOutLight|madonnina)$/, PALETTE.yellow],
   [/^(neonGreen|neonGreenFarmacia|neonGreenBar|cross[VH]|ledStripPharma)$/, PALETTE.green],
   [/^(neonWhiteMilano|neonWhiteBar)$/, PALETTE.white],
   [/^neonRedBar$/, PALETTE.red],
@@ -712,7 +718,7 @@ const SIGN_COLOURS: Record<string, string> = {
   Red: PALETTE.red, Blue: PALETTE.blue, Pink: PALETTE.pink, Green: PALETTE.green, Orange: PALETTE.orange, Yellow: PALETTE.yellow,
 }
 const SIGN = /^(garage|bank|milano|farmacia|bar|credits)(Black|Tip|White|Red|Blue|Pink|Green|Orange|Yellow)$/
-const SCREENS = /^(vendScreen|garageSmallScreen|atmScreen|ticketScreen|milanoScreen|pharmaScreen|easelFrontGraphic|barScreen|heroScreen)$/
+const SCREENS = /^(vendScreen|garageSmallScreen|arcadeBScreen|atmScreen|ticketScreen|milanoScreen|pharmaScreen|easelFrontGraphic|barScreen|heroScreen)$/
 const DYNAMIC = /^(fan[12]|dish|dishStand|spareWheel|spareHub|vaultWheel|vaultSpoke\d|vespa\w+|heroPost\d|heroFrame)$/
 /** GLB plane -> the machine whose screen it is. Hidden; a live plane of our own takes its frame. */
 const MACHINE_BY_MESH: Record<string, Machine> = Object.fromEntries(
@@ -721,6 +727,7 @@ const MACHINE_BY_MESH: Record<string, Machine> = Object.fromEntries(
 /** Hotspot -> the small screen behind it, which brightens while the pointer is over it. */
 const WAKES: Record<string, string> = {
   vendHitBox: 'vendScreen',
+  arcadeBHitBox: 'arcadeBScreen',
   garageSmallHitBox: 'garageSmallScreen',
   atmHitBox: 'atmScreen',
   ticketHitBox: 'ticketScreen',
@@ -915,15 +922,12 @@ function dress(scene: Group, atlases: Record<string, Texture>, painters: Record<
         object.material = screenMaterial()
         return
       }
-      const canvas = document.createElement('canvas')
-      canvas.width = painter.w
-      canvas.height = painter.h
-      const context = canvas.getContext('2d')!
+      const { canvas, context } = screenCanvas(painter)
       const texture = new CanvasTexture(canvas)
       // glTF UVs, the same convention as the baked atlases.
       texture.flipY = false
       texture.colorSpace = SRGBColorSpace
-      texture.anisotropy = 4
+      texture.anisotropy = 8
       const material = new MeshBasicMaterial({ map: texture, toneMapped: false, side: DoubleSide })
       object.material = material
       live.push({ name, material, texture, context, painter, last: -1 })
@@ -1025,17 +1029,44 @@ function hotspotUnder(event: ThreeEvent<PointerEvent>): Mesh | null {
   return within ? box : null
 }
 
+/**
+ * A painter's canvas, at the painter's own resolution times its device scale.
+ *
+ * The context comes back pre-scaled, so a painter goes on drawing in the
+ * coordinate space its layout was written in and lands on a sheet with as many
+ * texels as `scale` asks for. Setting the transform once here rather than per
+ * frame is deliberate: save/restore inside a painter preserves it, and a
+ * per-frame setTransform would be a fifth thing every painter had to remember.
+ */
+function screenCanvas(painter: Painter): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
+  const scale = painter.scale ?? 1
+  const canvas = document.createElement('canvas')
+  canvas.width = painter.w * scale
+  canvas.height = painter.h * scale
+  const context = canvas.getContext('2d')!
+  context.setTransform(scale, 0, 0, scale, 0, 0)
+  return { canvas, context }
+}
+
 /** The seven atlases. flipY off and sRGB: the glTF UV convention, same as the site. */
 function useAtlases(): Record<string, Texture> {
   const keys = Object.values(BAKED)
   const urls = keys.map((key) => SCENE[key].path)
   const loaded = useLoader(TextureLoader, urls)
+  // Asked of the context rather than typed: 16 is the common ceiling and the
+  // one WebGL is allowed to refuse.
+  const maxAnisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy())
   return useMemo(() => {
     const out: Record<string, Texture> = {}
     loaded.forEach((texture, index) => {
       texture.flipY = false
       texture.colorSpace = SRGBColorSpace
-      texture.anisotropy = 4
+      // The atlases are seen at a grazing angle almost everywhere — a floor
+      // running away from the camera, a wall the walk slides along — which is
+      // the one case trilinear filtering handles worst. Sixteen taps is what
+      // the extra texel density is for; without it a 4K sheet blurs to the
+      // same mush as a 2K one on exactly the surfaces you are looking at.
+      texture.anisotropy = Math.min(16, maxAnisotropy)
       texture.needsUpdate = true
       // What this texture is, so the sheet swap can recognise the set already
       // on the meshes and not re-fetch eight images to change nothing.
@@ -1070,10 +1101,7 @@ function AttractScreen({
   onEnter: () => void
 }) {
   const texture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = painter.w
-    canvas.height = painter.h
-    const next = new CanvasTexture(canvas)
+    const next = new CanvasTexture(screenCanvas(painter).canvas)
     next.colorSpace = SRGBColorSpace
     next.anisotropy = 8
     return next
@@ -1227,7 +1255,11 @@ function TowerModel({
       onEnter('monitor')
       return
     }
-    if (hit && hit.name === 'arcadeHitBox') {
+    // Either cabinet opens the arcade. The second one is set dressing in the
+    // scene and a target on the pavement: a visitor who walks up to the one on
+    // the right and clicks it has asked to play, and answering "not that one"
+    // is the kind of correctness nobody thanks you for.
+    if (hit && (hit.name === 'arcadeHitBox' || hit.name === 'arcadeBHitBox')) {
       onEnter('arcade')
       return
     }

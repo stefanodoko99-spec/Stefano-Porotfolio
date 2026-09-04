@@ -1,39 +1,23 @@
 import { notFound } from 'next/navigation'
 
-import { Contact } from '@/components/sections/Contact'
-import { Cinema } from '@/components/sections/Cinema'
-import { Manifesto } from '@/components/sections/Manifesto'
-import { Process } from '@/components/sections/Process'
-import { Work } from '@/components/sections/Work'
+import { BarStage } from '@/components/three/BarStage'
 import { isLocale } from '@/lib/i18n/config'
-import { getDictionary } from '@/lib/i18n/dictionaries'
 
-/** Project data is revalidated hourly once the work section lands. */
-export const revalidate = 3600
-
+/**
+ * The front door: Bar Martiri.
+ *
+ * The scene is the page. It carries its own name plate, its own navigation
+ * and its own loading screen, and it fills the viewport — which is why it sits
+ * outside the `(site)` group and gets none of the site's chrome. Two headers
+ * and two loaders over one diorama was the alternative.
+ *
+ * The written portfolio did not go anywhere. Work, the manifesto, the process
+ * and the contact form are at `/[locale]/info`, with the chrome and the three
+ * languages intact, and the contact sign inside the world opens it.
+ */
 export default async function Page(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params
   if (!isLocale(locale)) notFound()
 
-  const dict = getDictionary(locale)
-
-  return (
-    <>
-      <Cinema
-        dict={dict.work}
-        hero={dict.hero}
-        nav={dict.nav}
-        about={dict.about}
-        process={dict.process}
-        contact={dict.contact}
-        arcade={dict.arcade}
-        atm={dict.atm}
-        locale={locale}
-      />
-      <Work dict={dict.work} label={dict.nav.items.work} />
-      <Manifesto dict={dict.manifesto} about={dict.about} label={dict.nav.items.manifesto} />
-      <Process dict={dict.process} label={dict.nav.items.process} />
-      <Contact dict={dict.contact} locale={locale} label={dict.nav.items.contact} />
-    </>
-  )
+  return <BarStage />
 }

@@ -1,0 +1,252 @@
+/* The interface over the shop is nearly nothing, like the reference: black
+   until START, then a few thin words in the corners over the canvas. */
+:root {
+  --ink: #f4f2ff;
+  --ink-dim: rgba(244, 242, 255, 0.55);
+  --neon: #28e7ff;
+  --pink: #ff2f9c;
+  --font: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --thin: 'Bahnschrift Light Condensed', 'Bahnschrift', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+#app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+button {
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- loading -------------------------------------------------------------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  background: #000;
+  transition: opacity 800ms ease;
+}
+
+.loader[data-gone='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader-count {
+  margin: 0;
+  font-family: var(--thin);
+  font-weight: 300;
+  font-stretch: condensed;
+  font-size: 3.4rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.loader-bar {
+  width: 9rem;
+  height: 1px;
+  background: rgba(244, 242, 255, 0.18);
+  position: relative;
+}
+
+.loader-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--p, 0%);
+  background: var(--ink);
+  transition: width 200ms ease;
+}
+
+.loader-note {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.loader-start {
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--thin);
+  font-weight: 300;
+  font-stretch: condensed;
+  font-size: 3.4rem;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  cursor: pointer;
+  animation: fadeIn 900ms ease both;
+  transition: letter-spacing 400ms ease, color 200ms ease;
+}
+
+.loader-start:hover,
+.loader-start:focus-visible {
+  letter-spacing: 0.24em;
+  color: var(--neon);
+  outline: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- hud ------------------------------------------------------------------ */
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hud-name {
+  position: absolute;
+  top: max(1.1rem, env(safe-area-inset-top));
+  left: max(1.3rem, env(safe-area-inset-left));
+  margin: 0;
+  font-family: var(--thin);
+  font-weight: 300;
+  font-stretch: condensed;
+  font-size: 1.1rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.hud-back {
+  position: absolute;
+  top: max(0.8rem, env(safe-area-inset-top));
+  right: max(1.1rem, env(safe-area-inset-right));
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(244, 242, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--ink);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+  transition: border-color 200ms ease, color 200ms ease;
+}
+
+.hud-back:hover,
+.hud-back:focus-visible {
+  border-color: var(--neon);
+  color: var(--neon);
+  outline: none;
+}
+
+.hud-links {
+  position: absolute;
+  left: max(1.3rem, env(safe-area-inset-left));
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 1.1rem;
+  pointer-events: auto;
+}
+
+.hud-links button,
+.hud-links a {
+  padding: 0.3rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.hud-links button:hover,
+.hud-links a:hover,
+.hud-links button:focus-visible,
+.hud-links a:focus-visible {
+  color: var(--neon);
+  outline: none;
+}
+
+.hud-links button[aria-pressed='true'] {
+  color: var(--pink);
+}
+
+.hud-hint {
+  position: absolute;
+  right: max(1.3rem, env(safe-area-inset-right));
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .hud-hint {
+    display: none;
+  }
+
+  .hud-links {
+    gap: 0.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader,
+  .loader-start,
+  .loader-bar::after {
+    transition: none;
+    animation: none;
+  }
+}

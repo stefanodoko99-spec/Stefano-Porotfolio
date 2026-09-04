@@ -50,33 +50,38 @@ const CATCHUP_MS = 2500
 const PACE = 720
 
 /** Lines from the two scripts that build and bake the street, condensed but not invented. */
-const SOURCE = `# build_street.py: five lots along one road, Milano at the origin
+const SOURCE = `# build_street.py: one workshop on a corner, W x D metres, open toward -y
 W, D = 9.0, 7.0
-LOTS = [('GARAGE', 4.0, 'wallPurple'), ('BANK', 3.6, 'wallBankGrey'),
-        ('MILANO', 3.8, 'wallCream'), ('FARMACIA', 3.4, 'wallMint'), ('BEACH', 0.0, None)]
-PITCH = W + 2*T + GAP
-LOT_X = {name: (i - 2) * PITCH for i, (name, _, _) in enumerate(LOTS)}
+FRONT, BACK = -D/2, D/2
 
 def shell(name, h, wallcol, band, pillar):
     box(f'{name}_floor', (W + 2*T, D + 2*T, 0.3), (0, 0, -0.15), 'SHELL', M['concrete'])
     box(f'{name}_wallBack', (W + 2*T, T, h), (0, BACK + T/2, h/2), 'SHELL', M[wallcol])
     box(f'{name}_roof', (W + 2*T + 0.6, D + 2*T + 0.6, 0.3), (0, 0, h + 0.15), 'SHELL', M['roof'])
 
-OX = LOT_X['GARAGE']; H = 4.0; G = 'GARAGE'
+H = 4.0; G = 'GARAGE'
 shell(G, H, 'wallPurple', 'coral', 'coral')
 plane('garageScreen', 0.84, 0.49, (RX2, RY2 + 0.22, 1.15), 'SCREENS', M['screenOff'])
 text_mesh('neonPink', 'GARAGE', 0.62, (0.0, FRONT - 0.23, H - 0.55), 'EMISSIVE', E['neonPink'])
 
-OX = LOT_X['BANK']; H = 3.6; G = 'BANK'
-box('atmOutBody', (0.9, 0.6, 1.9), (AX, AY, 0.93), G, M['wallBankGrey'])
-plane('atmOutScreen', 0.46, 0.34, (AX, AY - 0.336, 1.33), 'SCREENS', M['screenOff'])
+def arcade_cabinet(tag, cx, cy, yaw, body, art, glow, marquee, title, screen, hit):
+    c, s = math.cos(yaw), math.sin(yaw)
+    def P(dx, dy, dz): return (cx + dx*c - dy*s, cy + dx*s + dy*c, dz)
+    box(f'{tag}Body', (0.74, 0.80, 0.78), P(0, 0, 0.51), G, body, rot=R())
+    box(f'{tag}Hood', (0.74, 0.74, 0.80), P(0, 0.03, 1.30), G, body, rot=R())
+    plane(screen, 0.56, 0.42, P(0, -0.393, 1.38), 'SCREENS', M['screenOff'], rot=R())
+    box(marquee, (0.72, 0.02, 0.20), P(0, -0.325, 1.83), 'EMISSIVE', glow, rot=R())
+    box(hit, (1.20, 1.40, 2.1), P(0, -0.16, 1.05), 'HITBOX', M['hitbox'], rot=R())
 
-OX = LOT_X['MILANO']; H = 3.8; G = 'MILANO'
-arch_wall('milanoArcade', W, H - 0.7, 0.3, (0, FRONT + 0.1, 0), G, M['wallTerracotta'], arches=3)
-plane('arcadeScreen', 0.54, 0.4, (CX, CY - 0.385, 1.45), 'SCREENS', M['screenOff'])
-box('neonPinkArcade', (0.66, 0.02, 0.2), (CX, CY - 0.375, 2.1), 'EMISSIVE', E['neonPink'])
+ARC = math.radians(-30)
+arcade_cabinet('arcA', 3.05, -2.05, ARC, M['pink'], M['purple'], E['neonPink'],
+               'neonPinkArcade', 'NEON DRIFT', 'arcadeScreen', 'arcadeHitBox')
 
-# bake_export.py: one atlas per group, Cycles, 2048 px, 48 samples
+VX, VY = W/2 - 0.42, 0.4; VF = VX - 0.40
+box('vendBody', (0.80, 0.90, 1.74), (VX, VY, 0.97), G, M['purple'])
+plane('vendScreen', 0.44, 0.954, (VF - 0.026, VY + 0.16, 1.30), 'SCREENS', M['screenOff'])
+
+# bake_export.py: one atlas per group, Cycles, 4096 px, 256 samples, WebP q92
 for coll_name, joined_name, tex_name in GROUPS:
     ob = join_group(coll_name, joined_name)
     unwrap(ob)

@@ -5,15 +5,9 @@ import Script from 'next/script'
 
 import '../globals.css'
 
-import { SmoothScroll } from '@/components/motion/SmoothScroll'
-import { SiteFooter } from '@/components/ui/SiteFooter'
-import { Grain } from '@/components/ui/Grain'
-import { Loader } from '@/components/ui/Loader'
-import { SiteHeader } from '@/components/ui/SiteHeader'
 import { LANG_TAG, LOCALES, OG_LOCALE, isLocale } from '@/lib/i18n/config'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { THEME_BOOT_SCRIPT } from '@/lib/theme'
-import { buildScenes } from '@/lib/sections'
 
 /**
  * The direction contract. It is emitted into the built markup so it can be
@@ -164,25 +158,8 @@ export default async function RootLayout(props: {
           {dict.nav.skipToContent}
         </a>
 
-        <SmoothScroll />
-        <Loader dict={dict.nav} />
-        <Grain />
-        <SiteHeader
-          nav={dict.nav}
-          hero={dict.hero}
-          locale={locale}
-          scenes={buildScenes(dict)}
-          name={dict.hero.name}
-        />
+        {props.children}
 
-        {/* The bar floats over the first screen rather than pushing it down:
-            the room behind it is the point, and a header with its own band at
-            the top of a cinematic shot is a letterbox nobody asked for. */}
-        <main id="content" tabIndex={-1}>
-          {props.children}
-        </main>
-
-        <SiteFooter dict={dict} />
       </body>
     </html>
   )

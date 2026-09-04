@@ -17,7 +17,7 @@ def shift(dx=0.0, dy=0.0, dz=0.0):
 #   lot 3  FARMACIA   pharmacy (green cross)
 #   lot 4  BEACH      Bar Martiri, the beach bar at Spille (Rruga e Pishave): wooden bar hut with a straw roof,
 #                     deck, sunbeds + umbrellas, pines, the sea behind
-# bake groups (one 2048 atlas each): SHELL, GROUND, GARAGE, BANK, MILANO, FARMACIA, BEACH, EXTERIOR
+# bake groups (one 4096 atlas each, written as WebP): SHELL, GROUND, GARAGE, BANK, MILANO, FARMACIA, BEACH, EXTERIOR
 # not baked: EMISSIVE (bloom), SCREENS (swapped textures), SIGNS + HITBOX (menu), DYNAMIC (matcap, animated)
 # run:  blender -b -P build_street.py   (saves garage.blend next to this file, renders previews)
 import bpy, bmesh, math, os
@@ -157,7 +157,7 @@ def _finish(name, bm, coll, material, loc=(0, 0, 0), rot=(0, 0, 0)):
 # three narrow faces stepping around the corner, shaded as one continuous
 # curve, so the highlight travels along the edge instead of stopping dead on it.
 # Two rather than four because every extra segment is more faces competing for
-# room in the same 2048 atlas, and past two the bake loses more to island
+# room in the same atlas, and past two the bake loses more to island
 # packing than the silhouette gains.
 CHAMFER = 0.09
 CHAMFER_MIN = 0.004     # below this the cut is under a pixel in the bake
@@ -547,7 +547,7 @@ for i in range(6):
     box(f'wrench{i}', (0.06, 0.02, 0.35 + (i % 3) * 0.1), (BX - 1.2 + i * 0.28, BACK - 0.07, 1.85), G, M['steel'])
     box(f'wrenchHead{i}', (0.12, 0.02, 0.08), (BX - 1.2 + i * 0.28, BACK - 0.07, 2.05 + (i % 3) * 0.05), G, M['steel'])
 cyl('hoseReel', 0.3, 0.14, (BX + 1.35, BACK - 0.12, 1.85), G, M['orange'], seg=16, rot=(math.pi/2, 0, 0))
-CX, CY = 3.6, 2.5
+CX, CY = 3.85, 2.95
 cyl('compTank', 0.32, 1.1, (CX, CY, 0.55), G, M['blue'], seg=16, rot=(0, math.pi/2, 0))
 box('compMotor', (0.45, 0.4, 0.4), (CX - 0.1, CY, 1.05), G, M['steelDark'])
 cyl('compPump', 0.14, 0.3, (CX + 0.35, CY, 1.05), G, M['steel'], seg=10)
@@ -564,7 +564,7 @@ for i, z in enumerate((0.55, 1.45, 2.35)):
         cyl(f'rackTyre{n}', 0.3, 0.22, (RX, -0.6 - 0.95 + j * 0.63, z + 0.32), G, M['rubber'], seg=16, rot=(0, math.pi/2, 0))
         cyl(f'rackTyreHub{n}', 0.17, 0.23, (RX, -0.6 - 0.95 + j * 0.63, z + 0.32), G, M['hub'], seg=10, rot=(0, math.pi/2, 0))
         n += 1
-for i, (dx, dy, mm) in enumerate([(3.9, -2.2, 'blue'), (3.3, -2.5, 'orange'), (3.85, -1.5, 'purple')]):
+for i, (dx, dy, mm) in enumerate([(3.90, 2.20, 'blue'), (3.32, 2.30, 'orange'), (3.90, 1.58, 'purple')]):
     cyl(f'drum{i}', 0.29, 0.88, (dx, dy, 0.44), G, M[mm], seg=16)
     cyl(f'drumRim{i}', 0.305, 0.04, (dx, dy, 0.86), G, M['steelDark'], seg=16)
 box('jackBody', (0.6, 0.2, 0.12), (-1.2, -2.2, 0.08), G, M['red'])
@@ -584,10 +584,44 @@ box('monitorStand', (0.15, 0.15, 0.3), (RX2, RY2 + 0.28, 0.93), G, M['steelDark'
 plane('garageScreen', 0.84, 0.49, (RX2, RY2 + 0.22, 1.15), 'SCREENS', M['screenOff'])
 box('chairSeat', (0.5, 0.5, 0.08), (RX2, RY2 + 0.9, 0.5), G, M['purple'])
 box('chairBack', (0.5, 0.08, 0.55), (RX2, RY2 + 1.12, 0.8), G, M['purple'])
+# ---- the drinks machine
+#
+# It was three boxes: a purple slab, a lit strip and the plane the site paints
+# the product grid onto. A vending machine is one of the few props a viewer
+# knows the anatomy of by heart — lit header, glass, a column of buttons, a
+# coin mech, a flap at shin height — and getting any one of those wrong is more
+# noticeable than the whole thing being low-poly, because the eye is checking
+# against something it has stood in front of. So all five are here. `vendScreen`
+# is still the plane behind the glass, so the goods are still live.
 VX, VY = W/2 - 0.42, 0.4
-box('vendBody', (0.8, 0.85, 1.95), (VX, VY, 0.975), G, M['purple'])
-plane('vendScreen', 0.6, 1.3, (VX - 0.455, VY, 1.1), 'SCREENS', M['screenOff'], rot=(0, 0, -math.pi/2))
-box('vendLight', (0.03, 0.7, 0.05), (VX - 0.43, VY, 1.9), 'EMISSIVE', E['neonBlue'])
+VF = VX - 0.40                                    # the face you buy from
+box('vendPlinth', (0.86, 0.96, 0.10), (VX, VY, 0.05), G, M['black'])
+box('vendBody', (0.80, 0.90, 1.74), (VX, VY, 0.97), G, M['purple'])
+box('vendHeader', (0.84, 0.94, 0.26), (VX, VY, 1.97), G, M['pink'])
+box('vendCap', (0.88, 0.98, 0.05), (VX, VY, 2.12), G, M['steelDark'])
+box('vendLight', (0.03, 0.80, 0.18), (VF - 0.025, VY, 1.97), 'EMISSIVE', E['neonBlue'])
+text_mesh('vendWord', 'BIBITE', 0.115, (VF - 0.05, VY, 1.92), G, M['black'], extrude=0.006, rot=(math.pi/2, 0, -math.pi/2))
+box('vendGlassFrame', (0.06, 0.52, 1.06), (VF + 0.01, VY + 0.16, 1.30), G, M['steelDark'])
+plane('vendScreen', 0.44, 0.954, (VF - 0.026, VY + 0.16, 1.30), 'SCREENS', M['screenOff'], rot=(0, 0, -math.pi/2))
+# the selection column: six buttons, a price rail under each, and the mech
+box('vendPanel', (0.05, 0.34, 1.02), (VF + 0.005, VY - 0.26, 1.30), G, M['white'])
+for k, col in enumerate(('red', 'yellow', 'green', 'blue', 'orange', 'pink')):
+    by = VY - 0.26 + (-0.08 if k % 2 else 0.08)
+    bz = 1.66 - (k // 2) * 0.20
+    cyl(f'vendBtn{k}', 0.042, 0.03, (VF - 0.03, by, bz), G, M[col], seg=12, rot=(0, math.pi/2, 0))
+    box(f'vendPrice{k}', (0.02, 0.12, 0.035), (VF - 0.032, by, bz - 0.075), G, M['black'])
+box('vendCoinPlate', (0.05, 0.24, 0.26), (VF + 0.005, VY - 0.26, 0.98), G, M['steelDark'])
+box('vendCoinSlot', (0.02, 0.02, 0.07), (VF - 0.035, VY - 0.31, 1.05), G, M['black'])
+box('vendNoteSlot', (0.02, 0.10, 0.02), (VF - 0.035, VY - 0.21, 1.05), G, M['black'])
+box('vendCoinCup', (0.06, 0.14, 0.06), (VF - 0.02, VY - 0.26, 0.88), G, M['black'])
+box('vendLEDgreen', (0.02, 0.14, 0.045), (VF - 0.035, VY - 0.26, 1.15), 'EMISSIVE', E['greenLED'])
+# the flap you reach into, and the underglow that makes it a shop window
+box('vendFlap', (0.06, 0.64, 0.28), (VF + 0.01, VY, 0.46), G, M['steelDark'])
+box('vendFlapLip', (0.05, 0.56, 0.04), (VF - 0.015, VY, 0.58), G, M['steel'])
+box('vendKick', (0.04, 0.80, 0.16), (VF + 0.005, VY, 0.22), G, M['black'])
+box('vendUnder', (0.03, 0.74, 0.025), (VF - 0.012, VY, 0.135), 'EMISSIVE', E['neonBlue'])
+for sy in (-1, 1):
+    box(f'vendEdge{"R" if sy > 0 else "L"}', (0.035, 0.035, 1.62), (VF + 0.015, VY + sy * 0.435, 0.97), 'EMISSIVE', E['neonBlue'])
 for i, x in enumerate((-2.2, 3.2)):
     cyl(f'fanHousing{i}', 0.42, 0.12, (x, BACK - 0.02, 3.2), G, M['steelDark'], seg=18, rot=(math.pi/2, 0, 0))
     bm = bmesh.new()
@@ -614,19 +648,293 @@ text_mesh('neonYellow', 'AUTO', 0.36, (W/2 + T/2, FRONT - 0.36, 3.0), 'EMISSIVE'
 text_mesh('neonGreen', 'REPAIR', 0.3, (W/2 + T/2, FRONT - 0.36, 2.5), 'EMISSIVE', E['neonGreen'], extrude=0.015, rot=(math.pi/2, 0, 0))
 box('storageDoorFrame', (1.1, 0.1, 2.2), (-3.0, BACK + 0.02, 1.1), G, M['steelDark'])
 box('storageLight', (0.95, 0.02, 2.05), (-3.0, BACK - 0.03, 1.05), 'EMISSIVE', E['neonBlue'])
-plane('posterTyres', 0.7, 1.0, (-W/2 + 0.03, 1.2, 2.3), G, M['orange'], rot=(0, 0, -math.pi/2))
-plane('posterRace', 1.1, 0.7, (W/2 - 0.03, -0.9, 3.3), G, M['red'], rot=(0, 0, math.pi/2))
+plane('posterTyres', 0.7, 1.0, (-W/2 + 0.03, 1.2, 2.3), G, M['orange'], rot=(0, 0, math.pi/2))
+plane('posterRace', 1.1, 0.7, (W/2 - 0.03, -0.9, 3.3), G, M['red'], rot=(0, 0, -math.pi/2))
 box('easelBoard', (0.6, 0.04, 0.8), (1.9, FRONT - 0.9, 0.5), G, M['black'], rot=(math.radians(-12), 0, 0))
 plane('easelFrontGraphic', 0.5, 0.65, (1.9, FRONT - 0.925, 0.52), 'SCREENS', M['screenOff'], rot=(math.radians(-12), 0, 0))
+# ================================================================ THE AMUSEMENT CORNER
+#
+# Two uprights and a drinks machine in the front-right of the bay, and the
+# borrowing is the point. Jesse Zhou's ramen shop is not memorable because the
+# noodles are modelled well; it is memorable because there is a cabinet in the
+# corner running an attract loop and a machine selling cans beside it, and the
+# eye goes to the two lit rectangles before it goes to anything else in the
+# room. A workshop with a waiting area has the same excuse for both — and the
+# site already had the arcade written: `arcadeScreen` is the plane lib/arcade
+# draws into, so the cabinet is the one you walk up to and play.
+#
+# They stand where the drums and the compressor used to, which is the only
+# large patch of floor the doorway frames with nothing in front of it. The
+# back-right corner was tried first and is where the drums went instead: it is
+# behind the lift, and a screen behind a car is a screen nobody sees.
+
+def arcade_cabinet(tag, cx, cy, yaw, body, art, glow, marquee, title, screen, hit):
+    """One upright, standing at (cx, cy) turned `yaw` off facing the door.
+
+    Written as a function rather than the flat run of calls the rest of the lot
+    is, because there are two of them and a cabinet is the one prop here whose
+    proportions are load-bearing: control panel at wrist height, screen at eye
+    height, marquee above both, or it reads as a fridge.
+
+    Everything below is authored in the cabinet's own frame — origin on the
+    floor between its feet, front toward -y — and put in the room by P and R.
+    That indirection is what lets the pair stand at an angle: a cabinet square
+    to a wall shows the room its side, and the whole reason this one is here is
+    that you can see what is on it from the door.
+    """
+    c, s = math.cos(yaw), math.sin(yaw)
+
+    def P(dx, dy, dz):
+        return (cx + dx * c - dy * s, cy + dx * s + dy * c, dz)
+
+    def R(rx=0.0, ry=0.0, rz=0.0):
+        # Blender composes XYZ as Rz·Ry·Rx, so adding the yaw to the z term is
+        # the cabinet's own tilt applied first and the turn applied after.
+        return (rx, ry, rz + yaw)
+
+    def on_panel(dx, dy, dz=0.0):
+        """A point on the control panel, which leans back fourteen degrees.
+
+        A rotated box does not carry its children: a joystick placed at a typed
+        height sits proud of the panel at one end and inside it at the other.
+        So the tilt is solved once, here, and everything on the panel is placed
+        in the panel's frame rather than the cabinet's.
+        """
+        return P(dx, -0.52 + 0.970 * dy - 0.242 * dz, 0.88 + 0.242 * dy + 0.970 * dz)
+
+    FR = -0.40                                          # the face you play at
+    TILT = math.radians(14)
+    box(f'{tag}Plinth', (0.80, 0.84, 0.12), P(0, 0, 0.06), G, M['black'], rot=R())
+    box(f'{tag}Body', (0.74, 0.80, 0.78), P(0, 0, 0.51), G, body, rot=R())
+    for sx in (-1, 1):
+        side = 'R' if sx > 0 else 'L'
+        plane(f'{tag}Art{side}', 0.72, 0.66, P(sx * 0.372, 0, 0.52), G, art, rot=R(rz=sx * math.pi / 2))
+        box(f'{tag}Edge{side}', (0.035, 0.035, 0.74), P(sx * 0.355, FR + 0.02, 0.50), 'EMISSIVE', glow, rot=R())
+    # The coin door. Two slits and a return, not two squares and a lit bar:
+    # anything with a symmetric pair above a horizontal strip reads as a face
+    # at a glance, and the first version of this was a cabinet with a mouth.
+    box(f'{tag}CoinDoor', (0.30, 0.05, 0.36), P(0, FR - 0.005, 0.55), G, M['steel'], rot=R())
+    for i, sx in enumerate((-0.05, 0.05)):
+        box(f'{tag}Slot{i}', (0.016, 0.03, 0.09), P(sx, FR - 0.032, 0.66), G, M['black'], rot=R())
+    cyl(f'{tag}Lock', 0.022, 0.03, P(0.115, FR - 0.032, 0.55), G, M['black'], seg=10, rot=R(rx=math.pi/2))
+    box(f'{tag}Coin', (0.02, 0.02, 0.26), P(-0.125, FR - 0.032, 0.55), 'EMISSIVE', glow, rot=R())
+    box(f'{tag}Return', (0.16, 0.05, 0.05), P(0, FR - 0.02, 0.41), G, M['black'], rot=R())
+    box(f'{tag}Under', (0.62, 0.03, 0.025), P(0, FR + 0.02, 0.135), 'EMISSIVE', glow, rot=R())
+    # The control panel, hanging off the front the way one has to: a player's
+    # wrists are in front of the cabinet, not on top of it, so the panel juts
+    # 0.24 past the body and the sticks end up clear of the glass rather than
+    # standing in front of it.
+    box(f'{tag}Apron', (0.72, 0.05, 0.22), P(0, -0.665, 0.74), G, M['steelDark'], rot=R())
+    box(f'{tag}Panel', (0.72, 0.30, 0.06), P(0, -0.52, 0.88), G, M['steelDark'], rot=R(rx=TILT))
+    box(f'{tag}PanelArt', (0.68, 0.26, 0.012), P(0, -0.52, 0.915), G, art, rot=R(rx=TILT))
+    for i, sx in enumerate((-0.25, 0.05)):
+        cyl(f'{tag}Gate{i}', 0.065, 0.018, on_panel(sx, 0.02, 0.012), G, M['steel'], seg=12, rot=R(rx=TILT))
+        cyl(f'{tag}Stick{i}', 0.026, 0.15, on_panel(sx, 0.02, 0.085), G, M['steelDark'], seg=10, rot=R(rx=TILT))
+        sphere(f'{tag}Ball{i}', 0.055, on_panel(sx, 0.02, 0.190), G, M['red'] if i == 0 else M['yellow'], seg=12, rings=8)
+        for b in range(3):
+            cyl(f'{tag}Btn{i}{b}', 0.036, 0.03, on_panel(sx + 0.115 + b * 0.075, 0.035 - (b % 2) * 0.055, 0.028), G,
+                M[('blue', 'green', 'orange')[b]], seg=12, rot=R(rx=TILT))
+        cyl(f'{tag}Start{i}', 0.026, 0.026, on_panel(sx + 0.05, -0.105, 0.026), G, M['white'], seg=10, rot=R(rx=TILT))
+    # The hood, and the bezel standing proud of its front face rather than
+    # buried in it — a bezel inside the hood is a bezel behind three quarters
+    # of a centimetre of opaque cabinet, which is how the first pass shipped a
+    # chrome frame around nothing at all.
+    box(f'{tag}Hood', (0.74, 0.74, 0.80), P(0, 0.03, 1.30), G, body, rot=R())
+    box(f'{tag}Bezel', (0.70, 0.05, 0.60), P(0, -0.365, 1.38), G, M['black'], rot=R())
+    for nm, dims, dx, dz in ((f'{tag}TrimT', (0.62, 0.02, 0.025), 0.0, 0.235),
+                             (f'{tag}TrimB', (0.62, 0.02, 0.025), 0.0, -0.235),
+                             (f'{tag}TrimL', (0.025, 0.02, 0.50), -0.298, 0.0),
+                             (f'{tag}TrimR', (0.025, 0.02, 0.50), 0.298, 0.0)):
+        box(nm, dims, P(dx, -0.400, 1.38 + dz), G, M['steel'], rot=R())
+    # 4:3, because the games behind it are 320x240 and a stretched CRT is the
+    # one thing an arcade cabinet cannot get away with.
+    plane(screen, 0.56, 0.42, P(0, -0.393, 1.38), 'SCREENS', M['screenOff'], rot=R())
+    for i, sx in enumerate((-0.22, 0.22)):
+        cyl(f'{tag}SpkRim{i}', 0.068, 0.012, P(sx, -0.335, 1.645), G, M['steelDark'], seg=14, rot=R(rx=math.pi/2))
+        cyl(f'{tag}Speaker{i}', 0.058, 0.02, P(sx, -0.340, 1.645), G, M['black'], seg=14, rot=R(rx=math.pi/2))
+    # the marquee: the only part of a cabinet anyone reads from across a room
+    box(f'{tag}MarqueeBack', (0.80, 0.24, 0.26), P(0, -0.20, 1.83), G, M['black'], rot=R())
+    box(marquee, (0.72, 0.02, 0.20), P(0, -0.325, 1.83), 'EMISSIVE', glow, rot=R())
+    text_mesh(f'{tag}Title', title, 0.095, P(0, -0.345, 1.792), G, M['black'], extrude=0.006, rot=R(rx=math.pi/2))
+    box(f'{tag}Cap', (0.86, 0.32, 0.06), P(0, -0.16, 1.99), G, M['steelDark'], rot=R())
+    box(hit, (1.20, 1.40, 2.1), P(0, -0.16, 1.05), 'HITBOX', M['hitbox'], rot=R())
+
+ARC = math.radians(-30)     # turned off the wall, so the door sees both screens
+arcade_cabinet('arcA', 3.05, -2.05, ARC, M['pink'], M['purple'], E['neonPink'], 'neonPinkArcade', 'NEON DRIFT',
+               'arcadeScreen', 'arcadeHitBox')
+arcade_cabinet('arcB', 3.83, -2.50, ARC, M['blue'], M['turquoise'], E['neonBlue'], 'neonBlueArcade', 'SPILLE 88',
+               'arcadeBScreen', 'arcadeBHitBox')
+text_mesh('neonYellowArcade', 'GIOCHI', 0.22, (W/2 - 0.05, -1.55, 2.75), 'EMISSIVE', E['neonYellow'],
+          extrude=0.015, rot=(math.pi/2, 0, -math.pi/2))
+
+# two stools, so the corner reads as somewhere people stand rather than storage
+for i, (sx, sy) in enumerate(((4.16, -3.02), (3.26, -0.52))):
+    cyl(f'arcStoolFoot{i}', 0.22, 0.03, (sx, sy, 0.015), G, M['steelDark'], seg=14)
+    cyl(f'arcStoolPole{i}', 0.045, 0.58, (sx, sy, 0.29), G, M['steel'], seg=10)
+    cyl(f'arcStoolRing{i}', 0.15, 0.018, (sx, sy, 0.20), G, M['steel'], seg=14)
+    cyl(f'arcStoolSeat{i}', 0.20, 0.07, (sx, sy, 0.615), G, M['red'] if i == 0 else M['blue'], seg=14)
+
+# the change machine, because a cabinet with a coin slot needs one within reach
+box('changeBody', (0.20, 0.34, 0.44), (W/2 - 0.13, -0.55, 1.45), G, M['yellow'])
+box('changeFace', (0.03, 0.26, 0.32), (W/2 - 0.24, -0.55, 1.45), G, M['black'])
+box('changeSlot', (0.02, 0.11, 0.02), (W/2 - 0.26, -0.55, 1.56), G, M['steel'])
+box('changeTray', (0.07, 0.18, 0.05), (W/2 - 0.25, -0.55, 1.30), G, M['steelDark'])
+box('changeLEDgreen', (0.02, 0.05, 0.05), (W/2 - 0.26, -0.45, 1.62), 'EMISSIVE', E['greenLED'])
+
+# paper lanterns over the corner: the one borrowed thing that is not a machine,
+# and the only warm light in a room lit by tubes
+for i, (lx, ly, lz) in enumerate(((3.22, -1.62, 3.08), (4.02, -2.62, 3.24), (2.62, -0.62, 3.00))):
+    cyl(f'lanternCord{i}', 0.008, H - lz - 0.16, (lx, ly, (H + lz + 0.16) / 2), G, M['black'], seg=6)
+    cyl(f'lanternGlow{i}', 0.17, 0.30, (lx, ly, lz), 'EMISSIVE', E['neonOrange'], seg=14)
+    cyl(f'lanternCapT{i}', 0.075, 0.03, (lx, ly, lz + 0.16), G, M['woodDark'], seg=10)
+    cyl(f'lanternCapB{i}', 0.075, 0.03, (lx, ly, lz - 0.16), G, M['woodDark'], seg=10)
+
+# a crate of empties nobody has taken back
+box('crateBody', (0.44, 0.32, 0.24), (3.55, 1.15, 0.12), G, M['red'])
+for i in range(6):
+    cyl(f'crateBottle{i}', 0.042, 0.26, (3.41 + (i % 3) * 0.14, 1.07 + (i // 3) * 0.16, 0.35), G,
+        M['green'] if i % 2 else M['orange'], seg=8)
+
+# ================================================================ THE REST OF THE WORKSHOP
+#
+# The clutter nobody designs. A shop reads as a real address because of the
+# metering, the conduit and the crates — the same argument the alley wall makes
+# outside, applied to the floor inside. None of this is looked at directly; all
+# of it is what stops the eye deciding the room is a set.
+
+# a chain hoist on the beam, parked off to the side of the bay
+box('hoistBody', (0.30, 0.26, 0.26), (-2.40, 0.40, H - 0.52), G, M['yellow'])
+box('hoistHanger', (0.08, 0.10, 0.20), (-2.40, 0.40, H - 0.33), G, M['steelDark'])
+for i in range(9):
+    cyl(f'hoistLink{i}', 0.020, 0.085, (-2.40, 0.34, H - 0.70 - i * 0.10), G, M['steel'], seg=6,
+        rot=(0, 0, 0) if i % 2 else (math.pi/2, 0, 0))
+cyl('hoistEye', 0.045, 0.06, (-2.40, 0.34, H - 1.66), G, M['steelDark'], seg=10)
+cyl('hoistHook', 0.095, 0.045, (-2.40, 0.34, H - 1.78), G, M['steelDark'], seg=12, rot=(math.pi/2, 0, 0), r2=0.03)
+
+# the creeper, left where it was last used
+box('creeperDeck', (1.10, 0.44, 0.05), (0.85, -1.55, 0.10), G, M['red'])
+box('creeperRest', (0.28, 0.34, 0.06), (1.28, -1.55, 0.16), G, M['black'], rot=(0, math.radians(-22), 0))
+for i, (cx, cy) in enumerate(((0.45, -1.72), (0.45, -1.38), (1.25, -1.72), (1.25, -1.38))):
+    cyl(f'creeperWheel{i}', 0.045, 0.03, (cx, cy, 0.045), G, M['black'], seg=8, rot=(0, math.pi/2, 0))
+
+# the mechanic's stool and the tray of sockets that lives on it
+cyl('stoolSeat', 0.19, 0.08, (-1.95, -1.50, 0.46), G, M['black'], seg=14)
+for k in range(3):
+    a = k * 2.094
+    cyl(f'stoolLeg{k}', 0.024, 0.44, (-1.95 + math.cos(a) * 0.16, -1.50 + math.sin(a) * 0.16, 0.22), G, M['steel'], seg=6)
+box('stoolTray', (0.26, 0.20, 0.05), (-1.95, -1.50, 0.525), G, M['steelDark'])
+for k in range(4):
+    cyl(f'socket{k}', 0.025, 0.07, (-2.03 + k * 0.055, -1.50, 0.585), G, M['steel'], seg=8)
+
+# the drip tray under the bay, and the stain that says it has been there a while
+box('dripPan', (0.95, 0.66, 0.05), (1.20, 0.30, 0.025), G, M['steelDark'])
+plane('oilStain', 0.80, 0.52, (1.20, 0.30, 0.056), G, M['black'], rot=(-math.pi/2, 0, 0))
+
+# what collects on a bench, at the height the bench top actually is (0.955)
+box('radioBody', (0.34, 0.17, 0.19), (-0.95, 3.05, 1.05), G, M['steelDark'])
+cyl('radioSpk', 0.058, 0.02, (-1.05, 2.962, 1.05), G, M['black'], seg=12, rot=(math.pi/2, 0, 0))
+box('radioDial', (0.11, 0.02, 0.06), (-0.83, 2.958, 1.06), G, M['yellow'])
+cyl('radioAerial', 0.008, 0.42, (-0.80, 3.10, 1.35), G, M['steel'], seg=6, rot=(math.radians(18), 0, 0))
+for i, (ox, col) in enumerate(((-0.34, 'green'), (-0.18, 'orange'), (-0.02, 'blue'))):
+    cyl(f'oilCan{i}', 0.055, 0.22, (ox, 3.02, 1.065), G, M[col], seg=10)
+    cyl(f'oilCap{i}', 0.022, 0.04, (ox, 3.02, 1.195), G, M['steelDark'], seg=8)
+cyl('funnel', 0.11, 0.16, (0.42, 3.12, 1.035), G, M['yellow'], seg=12, r2=0.02)
+box('weldMask', (0.22, 0.16, 0.26), (0.95, 3.14, 1.09), G, M['black'], rot=(math.radians(-20), 0, 0))
+plane('weldVisor', 0.16, 0.07, (0.95, 3.058, 1.14), G, M['green'], rot=(math.radians(-20), 0, 0))
+box('ragPile', (0.28, 0.22, 0.09), (-1.25, 2.88, 1.00), G, M['white'], chamfer=0.05)
+cyl('benchMug', 0.05, 0.10, (0.70, 2.84, 1.005), G, M['white'], seg=12)
+for i, (ox, col) in enumerate(((-1.05, 'blue'), (-0.35, 'orange'), (0.35, 'green'))):
+    box(f'shelfBox{i}', (0.50, 0.44, 0.30), (ox, 3.05, 0.42), G, M[col], chamfer=0.03)
+
+# the coffee machine on reception, which is why anyone waits happily
+box('coffeeBody', (0.24, 0.26, 0.30), (-3.58, -2.42, 0.96), G, M['red'], chamfer=0.04)
+box('coffeeTop', (0.26, 0.28, 0.03), (-3.58, -2.42, 1.125), G, M['steelDark'])
+box('coffeeSpout', (0.06, 0.05, 0.07), (-3.58, -2.56, 0.94), G, M['steel'])
+box('coffeeTray', (0.20, 0.14, 0.02), (-3.58, -2.57, 0.83), G, M['steelDark'])
+for i, ox in enumerate((-3.28, -3.16)):
+    cyl(f'deskMug{i}', 0.045, 0.09, (ox, -2.48, 0.855), G, M['white'] if i else M['yellow'], seg=12)
+
+# a clock over the storage door, because the shift ends at six
+cyl('clockCase', 0.19, 0.05, (-3.0, BACK - 0.06, 2.70), G, M['steelDark'], seg=18, rot=(math.pi/2, 0, 0))
+cyl('clockFace', 0.165, 0.02, (-3.0, BACK - 0.10, 2.70), G, M['white'], seg=18, rot=(math.pi/2, 0, 0))
+box('clockHourHand', (0.020, 0.010, 0.10), (-2.977, BACK - 0.115, 2.744), G, M['black'], rot=(0, math.radians(28), 0))
+box('clockMinHand', (0.015, 0.010, 0.15), (-3.048, BACK - 0.115, 2.643), G, M['black'], rot=(0, math.radians(-140), 0))
+
+# extinguisher and first aid, on the two walls a regulator would want them on
+cyl('extBody', 0.105, 0.46, (-W/2 + 0.17, 2.85, 0.95), G, M['red'], seg=14)
+cyl('extNeck', 0.035, 0.10, (-W/2 + 0.17, 2.85, 1.22), G, M['black'], seg=8)
+box('extBracket', (0.10, 0.16, 0.05), (-W/2 + 0.08, 2.85, 1.10), G, M['steelDark'])
+cyl('extHose', 0.014, 0.24, (-W/2 + 0.26, 2.85, 1.10), G, M['black'], seg=6, rot=(0, math.radians(35), 0))
+plane('extSign', 0.20, 0.20, (-W/2 + 0.03, 2.85, 1.62), G, M['red'], rot=(0, 0, math.pi/2))
+box('aidBox', (0.16, 0.30, 0.26), (W/2 - 0.11, 1.55, 1.62), G, M['white'])
+box('aidCrossV', (0.02, 0.05, 0.16), (W/2 - 0.20, 1.55, 1.62), G, M['red'])
+box('aidCrossH', (0.02, 0.16, 0.05), (W/2 - 0.20, 1.55, 1.62), G, M['red'])
+
+# the closing-up corner
+cyl('broomPole', 0.022, 1.35, (-4.16, 1.55, 0.70), G, M['woodPale'], seg=8, rot=(math.radians(-9), 0, math.radians(6)))
+box('broomHead', (0.10, 0.34, 0.10), (-4.06, 1.44, 0.06), G, M['woodDark'])
+box('broomBristle', (0.09, 0.32, 0.09), (-4.06, 1.44, 0.045), G, M['straw'])
+cyl('bucket', 0.17, 0.30, (-3.86, 1.14, 0.15), G, M['yellow'], seg=14, r2=0.13)
+cyl('bucketWater', 0.142, 0.02, (-3.86, 1.14, 0.27), G, M['turquoise'], seg=14)
+cyl('mopPole', 0.020, 1.20, (-3.88, 1.14, 0.74), G, M['steel'], seg=8, rot=(math.radians(4), 0, math.radians(-8)))
+
+# a floor drain, because a garage washes down
+box('drainFrame', (0.44, 0.44, 0.03), (-0.10, -1.70, 0.015), G, M['steelDark'])
+for k in range(5):
+    box(f'drainBar{k}', (0.36, 0.03, 0.02), (-0.10, -1.84 + k * 0.07, 0.032), G, M['steel'])
+
+# plates the shop kept, high on the wall over the drums
+for i, (pz, col) in enumerate(((2.10, 'white'), (2.46, 'yellow'), (2.82, 'white'))):
+    plane(f'plate{i}', 0.42, 0.13, (W/2 - 0.03, -2.55 + i * 0.06, pz), G, M[col], rot=(0, 0, -math.pi/2))
+
+# a wall shelf of parts boxes, between the storage door and the pegboard
+box('wallShelf', (1.00, 0.28, 0.04), (-1.95, BACK - 0.16, 1.72), G, M['woodDark'])
+for k, col in enumerate(('blue', 'orange', 'green')):
+    box(f'partBox{k}', (0.28, 0.22, 0.20), (-2.28 + k * 0.33, BACK - 0.16, 1.84), G, M[col], chamfer=0.03)
+for k, bx in enumerate((-2.38, -1.52)):
+    box(f'wallShelfBracket{k}', (0.04, 0.22, 0.20), (bx, BACK - 0.14, 1.60), G, M['steelDark'])
+
+# exhausts leaning where they were pulled off
+for i, (ex, ang) in enumerate(((-4.22, 7), (-4.10, -5), (-4.30, 12))):
+    cyl(f'exhaust{i}', 0.045, 1.50, (ex, 3.05 + i * 0.10, 0.78), G, M['steel'], seg=10,
+        rot=(math.radians(ang), 0, math.radians(6)))
+
+# the cord reel over the bay, and the plug hanging off it
+cyl('cordDrum', 0.19, 0.14, (0.90, -2.40, H - 0.62), G, M['orange'], seg=16, rot=(0, math.pi/2, 0))
+box('cordBracket', (0.08, 0.26, 0.30), (0.90, -2.40, H - 0.43), G, M['steelDark'])
+cyl('cordDrop', 0.008, 1.10, (0.90, -2.46, H - 1.25), G, M['black'], seg=6)
+box('cordPlug', (0.05, 0.05, 0.10), (0.90, -2.46, H - 1.85), G, M['yellow'])
+
+# a calendar on the pegboard, a water cooler by reception, tyres waiting to go on
+plane('calendar', 0.30, 0.42, (1.20, BACK - 0.06, 2.78), G, M['white'])   # above the pegboard: the hose reel owns the wall below it
+cyl('coolerBody', 0.20, 0.95, (-4.12, -3.02, 0.475), G, M['white'], seg=14)
+cyl('coolerBottle', 0.17, 0.42, (-4.12, -3.02, 1.16), G, M['turquoise'], seg=14, r2=0.09)
+box('coolerTap', (0.10, 0.09, 0.10), (-4.12, -3.19, 0.72), G, M['blue'])
+cyl('coolerCups', 0.045, 0.24, (-3.95, -3.02, 0.86), G, M['white'], seg=10)
+for k in range(3):
+    cyl(f'stackTyre{k}', 0.34, 0.22, (-1.85, -2.85, 0.11 + k * 0.22), G, M['rubber'], seg=18)
+    cyl(f'stackHub{k}', 0.19, 0.23, (-1.85, -2.85, 0.11 + k * 0.22), G, M['hub'], seg=12)
+
+# the battery charger on its trolley
+box('chargerBody', (0.34, 0.30, 0.42), (-0.20, -2.55, 0.62), G, M['red'], chamfer=0.05)
+box('chargerFace', (0.24, 0.03, 0.24), (-0.20, -2.71, 0.66), G, M['black'])
+box('chargerLEDred', (0.05, 0.02, 0.05), (-0.20, -2.73, 0.74), 'EMISSIVE', E['redLED'])
+box('chargerDial', (0.10, 0.02, 0.10), (-0.20, -2.73, 0.58), G, M['white'])
+box('chargerHandle', (0.03, 0.26, 0.03), (-0.20, -2.55, 0.90), G, M['steelDark'])
+for k, sy in enumerate((-0.13, 0.13)):
+    cyl(f'chargerWheel{k}', 0.09, 0.05, (-0.36, -2.55 + sy, 0.09), G, M['black'], seg=10, rot=(0, math.pi/2, 0))
+
 light('g_fill', 'AREA', (0, 0, H - 0.5), 900, (0.95, 0.9, 1.0), size=6.0)
 light('g_front', 'AREA', (0, FRONT - 2.5, 2.5), 400, (1.0, 0.55, 0.85), size=5.0, rot=(math.radians(-70), 0, 0))
 light('g_bench', 'POINT', (0.3, 2.3, 2.6), 400, (1.0, 0.7, 0.35))
 light('g_lift', 'POINT', (1.2, 0.0, 3.0), 450, (0.5, 0.9, 1.0))
 light('g_chest', 'POINT', (-3.2, 1.5, 2.0), 220, (1.0, 0.25, 0.75))
+light('g_arcade', 'POINT', (3.4, -1.9, 2.5), 340, (1.0, 0.35, 0.9))
+light('g_vend', 'POINT', (3.5, 0.4, 1.9), 220, (0.35, 0.85, 1.0))
 exterior('G', H, ['ac', 'mural', 'utility'])
 cyl('dishStand', 0.05, 1.2, (3.8, -2.4, H + 0.3 + 0.6), 'DYNAMIC', M['steel'], seg=8)
 cyl('dish', 0.55, 0.06, (3.8, -2.4, H + 0.3 + 1.3), 'DYNAMIC', M['white'], seg=18, rot=(math.radians(-55), 0, 0), r2=0.15)
-for nm, dims, loc in (('garageScreenHitBox', (1.2, 0.3, 0.7), (RX2, RY2 + 0.22, 1.15)), ('vendHitBox', (0.9, 0.95, 2.0), (VX, VY, 1.0)),
+for nm, dims, loc in (('garageScreenHitBox', (1.2, 0.3, 0.7), (RX2, RY2 + 0.22, 1.15)), ('vendHitBox', (0.98, 1.05, 2.2), (VX, VY, 1.10)),
                       ('garageSmallHitBox', (0.6, 0.3, 0.5), (-0.9, -1.15, 1.2)), ('carHitBox', (4.0, 1.9, 1.3), (LX, LY, CZ + 0.5)),
                       ('easelHitBox', (0.7, 0.3, 0.9), (1.9, FRONT - 0.9, 0.5))):
     box(nm, dims, loc, 'HITBOX', M['hitbox'])

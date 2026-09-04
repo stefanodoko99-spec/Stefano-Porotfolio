@@ -44,12 +44,20 @@ export type SceneAsset = {
  * no materials at all: the scene assigns them by mesh name, and the atlases are
  * the light. Source and bake scripts live in `scripts/tower/`.
  */
+/**
+ * WebP, at 4096. The atlases are the lighting — nothing in the scene is lit at
+ * runtime — so their resolution is the scene's, and 2048 across a nine-metre
+ * workshop went soft the moment the camera walked to the monitor. Lossy WebP
+ * at quality 92 puts a 4K sheet on the wire for about what the 2K PNG cost,
+ * which is the only reason four times the texels is affordable. See
+ * scripts/tower/bake_export.py.
+ */
 export const SCENE = {
   tower: { path: '/models/tower/tower.glb', label: 'SHOP GEOMETRY' },
-  shell: { path: '/models/tower/shellBaked.png', label: 'WALLS + ROOFS' },
-  ground: { path: '/models/tower/groundBaked.png', label: 'ROAD' },
-  exterior: { path: '/models/tower/exteriorBaked.png', label: 'FACADES' },
-  garage: { path: '/models/tower/garageBaked.png', label: 'GARAGE' },
+  shell: { path: '/models/tower/shellBaked.webp', label: 'WALLS + ROOFS' },
+  ground: { path: '/models/tower/groundBaked.webp', label: 'ROAD' },
+  exterior: { path: '/models/tower/exteriorBaked.webp', label: 'FACADES' },
+  garage: { path: '/models/tower/garageBaked.webp', label: 'GARAGE' },
 } as const satisfies Record<string, SceneAsset>
 
 /** Every asset, in declaration order, for anything that has to walk the set. */

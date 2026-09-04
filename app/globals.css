@@ -1,4 +1,8 @@
 @import 'tailwindcss';
+/* The Bar Martiri scene's own chrome: loader, HUD, and the screen-reader copy
+   behind it. Global rather than a CSS Module because the three.js code
+   addresses those nodes by id, which module scoping would rewrite. */
+@import './bar-scene.css';
 
 /* ---------------------------------------------------------------------------
    THE CAMERA REPORT

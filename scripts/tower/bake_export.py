@@ -1,14 +1,32 @@
-# Headless: blender -b garage.blend -P bake_export.py -- [size] [samples] [only] [variant]
+# Headless: blender -b garage.blend -P bake_export.py -- [size] [samples] [only] [variant] [png]
 #   variant: 'night' (default, the authored look) or 'day'. See lighting.py.
 # Joins each bake group into one mesh, smart-UV-unwraps it, bakes COMBINED lighting with Cycles (CPU)
 # into one atlas per group, saves PNGs, then exports a Draco GLB with NO materials (like jesse-zhou.com).
 import bpy, os, sys, json, math, time
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-SIZE = int(argv[0]) if len(argv) > 0 else 2048
+SIZE = int(argv[0]) if len(argv) > 0 else 4096
 SAMPLES = int(argv[1]) if len(argv) > 1 else 48
 ONLY = argv[2].split(',') if len(argv) > 2 and argv[2] and argv[2] not in ('day', 'night') else None
 VARIANT = next((a for a in argv if a in ('day', 'night')), 'night')
+
+# WebP, not PNG.
+#
+# The atlases ARE the lighting here — nothing is lit at runtime — so their
+# resolution is the resolution of the whole scene, and 2048 across a nine-metre
+# workshop is about forty texels to the metre: enough from the road, visibly
+# soft once the camera has walked to the monitor. Four thousand and ninety-six
+# fixes that and quadruples the bytes, and a lossless 4K sheet is six megabytes
+# it is not worth asking anyone to download four of.
+#
+# Lossy WebP at 92 lands a 4K sheet at roughly what the 2K PNG cost. That is
+# the whole trade: four times the texels for the same wire. It is also the
+# right codec to be lossy in here, because what is in these images is baked
+# diffuse light — large, smooth, low-frequency gradients, which is the case
+# every DCT-derived codec is best at. The lettering and the neon are not in
+# them; they are SIGNS and EMISSIVE meshes, drawn flat at runtime.
+FORMAT = 'PNG' if 'png' in argv else 'WEBP'
+EXT = '.png' if FORMAT == 'PNG' else '.webp'
 
 # Day writes its own atlases beside the night ones rather than over them, so a
 # day bake can never cost you the night set that the site is currently serving.
@@ -67,8 +85,14 @@ BAKE_MARGIN = 4
 # that allows: measured, going to a 20px gutter cleared the bleed and halved
 # the lit area of the atlas, which trades a contamination artefact for a
 # sharpness one. 2.5x the dilation clears it with a pixel to spare.
-ISLAND_MARGIN = (BAKE_MARGIN * 2.5) / 2048.0     # ~0.0049, ~10px at 2048
-PACK_MARGIN = (BAKE_MARGIN * 3.0) / 2048.0       # ~0.0059, ~12px at 2048
+#
+# Divided by SIZE, not by a hard 2048. The gutter is expressed in UV, so a
+# constant one costs twice as many pixels on a 4K sheet as on a 2K one — the
+# bake would spend the new resolution on empty space between islands and hand
+# back a sharper picture of the gutters. Derived from the atlas actually being
+# written, the gutter stays ten pixels wide at every size.
+ISLAND_MARGIN = (BAKE_MARGIN * 2.5) / float(SIZE)     # ~10px, whatever SIZE is
+PACK_MARGIN = (BAKE_MARGIN * 3.0) / float(SIZE)       # ~12px, whatever SIZE is
 
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
@@ -185,13 +209,16 @@ def bake_group(ob, tex_name):
     select_only([ob], ob)
     t0 = time.time()
     bpy.ops.object.bake(type='COMBINED')
-    path = os.path.join(TEX_DIR, tex_name + SUFFIX + '.png')
+    path = os.path.join(TEX_DIR, tex_name + SUFFIX + EXT)
     image.filepath_raw = path
-    image.file_format = 'PNG'
-    image.save()
-    log(f'{tex_name}: baked {SIZE}px in {time.time() - t0:.0f}s -> {path}')
+    image.file_format = FORMAT
+    scene.render.image_settings.file_format = FORMAT
+    scene.render.image_settings.quality = 92
+    image.save(quality=92) if FORMAT == 'WEBP' else image.save()
+    log(f'{tex_name}: baked {SIZE}px in {time.time() - t0:.0f}s -> {path} '
+        f'({os.path.getsize(path) / 1e6:.2f} MB)')
 
-manifest = {'size': SIZE, 'samples': SAMPLES, 'groups': {}, 'emissive': [], 'screens': [], 'signs': [], 'hitboxes': [], 'dynamic': []}
+manifest = {'size': SIZE, 'samples': SAMPLES, 'format': FORMAT, 'groups': {}, 'emissive': [], 'screens': [], 'signs': [], 'hitboxes': [], 'dynamic': []}
 t_all = time.time()
 for coll_name, joined_name, tex_name in GROUPS:
     # A group with nothing in it is not an error any more: the scene is one
@@ -207,7 +234,7 @@ for coll_name, joined_name, tex_name in GROUPS:
         continue
     log(f'{coll_name}: joined -> {joined_name} ({len(ob.data.vertices)} verts, {len(ob.material_slots)} mats)')
     unwrap(ob)
-    manifest['groups'][joined_name] = tex_name + SUFFIX + '.png'
+    manifest['groups'][joined_name] = tex_name + SUFFIX + EXT
     if ONLY and coll_name not in ONLY:
         log(f'{coll_name}: bake skipped (not in ONLY)')
         continue

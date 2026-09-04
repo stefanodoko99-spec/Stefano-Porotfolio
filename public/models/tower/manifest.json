@@ -1,11 +1,12 @@
 {
-  "size": 2048,
+  "size": 4096,
   "samples": 256,
+  "format": "WEBP",
   "groups": {
-    "shellJoined": "shellBaked.png",
-    "groundJoined": "groundBaked.png",
-    "garageJoined": "garageBaked.png",
-    "exteriorJoined": "exteriorBaked.png"
+    "shellJoined": "shellBaked.webp",
+    "groundJoined": "groundBaked.webp",
+    "garageJoined": "garageBaked.webp",
+    "exteriorJoined": "exteriorBaked.webp"
   },
   "emissive": [
     "GlampBBulb",
@@ -16,22 +17,38 @@
     "GwinB3Pane",
     "GwinL0Pane",
     "GwinR1Pane",
+    "arcACoin",
+    "arcAEdgeL",
+    "arcAEdgeR",
+    "arcAUnder",
+    "arcBCoin",
+    "arcBEdgeL",
+    "arcBEdgeR",
+    "arcBUnder",
     "carHeadL",
     "carHeadR",
     "carTailL",
     "carTailR",
+    "changeLEDgreen",
+    "chargerLEDred",
     "compLEDgreen",
     "lampBulb0",
     "lampBulb1",
     "lampGlobeL0",
     "lampGlobeR0",
+    "lanternGlow0",
+    "lanternGlow1",
+    "lanternGlow2",
     "ledStripBench",
     "liftLEDgreen",
     "liftLEDred",
     "neonBlue",
+    "neonBlueArcade",
     "neonGreen",
     "neonPink",
+    "neonPinkArcade",
     "neonYellow",
+    "neonYellowArcade",
     "poleLight",
     "storageLight",
     "trafficAmber",
@@ -42,9 +59,15 @@
     "tubeLight2",
     "tubeLight3",
     "tubeLight4",
-    "vendLight"
+    "vendEdgeL",
+    "vendEdgeR",
+    "vendLEDgreen",
+    "vendLight",
+    "vendUnder"
   ],
   "screens": [
+    "arcadeBScreen",
+    "arcadeScreen",
     "easelFrontGraphic",
     "garageScreen",
     "garageSmallScreen",
@@ -78,6 +101,8 @@
     "milanoWhite"
   ],
   "hitboxes": [
+    "arcadeBHitBox",
+    "arcadeHitBox",
     "bankHitBox",
     "barHitBox",
     "carHitBox",
@@ -103,5 +128,5 @@
     "spareWheel"
   ],
   "glb": "garage.glb",
-  "glbBytes": 290148
+  "glbBytes": 451128
 }
