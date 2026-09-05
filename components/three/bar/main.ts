@@ -58,8 +58,7 @@ const HINTS: Record<Mode, string> = {
  * Where this scene's own assets live inside the Next app.
  *
  * This was `import.meta.env.BASE_URL`, which is Vite's and does not exist
- * here. The models and atlases moved to `public/bar/` so they cannot collide
- * with the workshop's `public/models/tower/`; the Draco decoder is the one
+ * here. The models and atlases live in `public/bar/`; the Draco decoder is the one
  * exception, because the site already serves an identical copy at /draco/ and
  * a second 700kB of it would be downloaded for nothing.
  */

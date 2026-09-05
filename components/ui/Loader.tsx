@@ -1,21 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { CircledTake } from '@/components/ui/CircledTake'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
-import { EMPTY_LOADING, loadingState, subscribeLoading } from '@/lib/motion/loading'
-import { SCENE_ASSETS } from '@/lib/motion/sceneAssets'
 import { onFrame } from '@/lib/motion/ticker'
 
 /**
- * The first thing anyone sees: the street being written.
+ * The first thing anyone sees: the shop being written.
  *
- * It exists because the first screen is a street that has to arrive over the
+ * It exists because the pages behind it have to arrive over the
  * network, and the alternative to a loading screen is a visitor watching a
  * dark rectangle fill in one object at a time. What it shows while waiting is
- * the code that builds the street, typed out as the files land: lines of
- * `scripts/tower/build_street.py` and `bake_export.py`, the same calls and the
+ * the code that builds the world, typed out as the page settles: lines of
+ * `bar-martiri/blender/build_shop.py` and `bake_shop.py`, the same calls and the
  * same mesh names the scene assigns its materials by. A terminal that types
  * real code is telling the truth about what is arriving, which a fake one full
  * of plausible nonsense would not be.
@@ -49,19 +47,20 @@ const CATCHUP_MS = 2500
 /** Characters per second, at most. The network is allowed to be slower; it is never allowed to be faster. */
 const PACE = 720
 
-/** Lines from the two scripts that build and bake the street, condensed but not invented. */
-const SOURCE = `# build_street.py: one workshop on a corner, W x D metres, open toward -y
-W, D = 9.0, 7.0
-FRONT, BACK = -D/2, D/2
+/** Lines from the two scripts that build and bake the shop, condensed but not invented. */
+const SOURCE = `# build_shop.py: the ramen shop, built in Blender so it can be lit in Blender
+GROUPS = ['SHOP', 'MACHINES', 'SIGNPOST', 'FLOOR', 'TEXT', 'EMISSIVE', 'SCREENS', 'HITBOX']
+F = -2.9                                     # the floor, in three.js y
 
-def shell(name, h, wallcol, band, pillar):
-    box(f'{name}_floor', (W + 2*T, D + 2*T, 0.3), (0, 0, -0.15), 'SHELL', M['concrete'])
-    box(f'{name}_wallBack', (W + 2*T, T, h), (0, BACK + T/2, h/2), 'SHELL', M[wallcol])
-    box(f'{name}_roof', (W + 2*T + 0.6, D + 2*T + 0.6, 0.3), (0, 0, h + 0.15), 'SHELL', M['roof'])
+def T(x, y, z): return (x, -z, y)            # three (x, y, z) -> Blender (x, -z, y)
+def D(w, h, d): return (w, d, h)             # three (w, h, d) -> Blender dims
 
-H = 4.0; G = 'GARAGE'
-shell(G, H, 'wallPurple', 'coral', 'coral')
-plane('garageScreen', 0.84, 0.49, (RX2, RY2 + 0.22, 1.15), 'SCREENS', M['screenOff'])
+FACING = {'+z': (math.pi / 2, 0, 0), '-x': (math.pi / 2, 0, -math.pi / 2)}
+FLOOR_TEXT = (0, 0, -math.pi / 2)            # lying down, read from the -x/-z corner
+
+# bake_shop.py: one atlas per group, and the live layers left unbaked
+GROUPS = [('SHOP', 'shopJoined', 'shopBaked', 2048, False)]
+LIVE = ['TEXT', 'EMISSIVE', 'SCREENS', 'HITBOX', 'DYNAMIC', 'MARKER']
 text_mesh('neonPink', 'GARAGE', 0.62, (0.0, FRONT - 0.23, H - 0.55), 'EMISSIVE', E['neonPink'])
 
 def arcade_cabinet(tag, cx, cy, yaw, body, art, glow, marquee, title, screen, hit):
@@ -120,45 +119,7 @@ const STARTS = TOKENS.reduce<number[]>((acc, token, i) => {
 }, [])
 const TOTAL = (STARTS[STARTS.length - 1] as number) + (TOKENS[TOKENS.length - 1] as Token).text.length
 
-/**
- * How many of the street's files have actually arrived.
- *
- * Read off the network rather than from a loader library: three's default
- * manager is not what R3F loads through, so the obvious source reports nothing
- * at all. Resource timing does not care which library made the request, and it
- * counts entries served from cache as well as from the wire.
- *
- * This drives the typing. It never decides when the door opens; that is the
- * scene's own ready signal, so an asset list that drifts out of date can only
- * make the count coarse, never strand anybody.
- */
-function useAssetsArrived(): ReadonlySet<string> {
-  const [arrived, setArrived] = useState<ReadonlySet<string>>(() => new Set<string>())
-
-  useEffect(() => {
-    const seen = new Set<string>()
-
-    const consider = (name: string) => {
-      const match = SCENE_ASSETS.find((asset) => name.endsWith(asset.path))
-      if (match) seen.add(match.path)
-    }
-
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) consider(entry.name)
-      // A fresh Set each time. React compares snapshots by identity, so handing
-      // back the same one after editing it in place would signal a change and
-      // render nothing, the same trap lib/motion/loading.ts documents.
-      setArrived(new Set(seen))
-    })
-    observer.observe({ type: 'resource', buffered: true })
-
-    return () => observer.disconnect()
-  }, [])
-
-  return arrived
-}
-
-/** Fonts settle long before the street does, but on a fast connection they are
+/** Fonts are the last real signal this screen has, and on a fast connection they are
  *  the last thing holding the composition back from being correct. */
 function useFontsReady(): boolean {
   const [ready, setReady] = useState(false)
@@ -179,15 +140,7 @@ function useFontsReady(): boolean {
 type Phase = 'typing' | 'ready' | 'leaving' | 'gone'
 
 export function Loader({ dict }: { dict: Dictionary['nav'] }) {
-  const scene = useSyncExternalStore(
-    subscribeLoading,
-    loadingState,
-    // The server renders the overlay at rest: nothing has loaded and nothing has
-    // declared itself yet, which is exactly the initial client state too.
-    () => EMPTY_LOADING,
-  )
   const fontsReady = useFontsReady()
-  const arrived = useAssetsArrived()
   const [expired, setExpired] = useState(false)
   const [phase, setPhase] = useState<Phase>('typing')
   const spans = useRef<(HTMLSpanElement | null)[]>([])
@@ -199,20 +152,15 @@ export function Loader({ dict }: { dict: Dictionary['nav'] }) {
     return () => window.clearTimeout(timer)
   }, [])
 
-  const sceneSettled = scene.expecting === false || scene.progress >= 1
-  const complete = expired || (fontsReady && sceneSettled)
+  const complete = expired || fontsReady
 
-  // Files in, out of files expected, until the scene says it is ready, at
-  // which point the count is whatever "ready" means: one hundred. A page whose
-  // street is never coming counts on the fonts instead, so it still moves.
-  const fraction =
-    scene.progress >= 1
-      ? 1
-      : scene.expecting === false
-        ? fontsReady
-          ? 1
-          : 0.5
-        : arrived.size / SCENE_ASSETS.length
+  // The count used to be files in over files expected: this screen covered a
+  // 3D street arriving over the network and typed at the rate its atlases
+  // actually landed. There is no street behind it any more — the diorama took
+  // the homepage and brings its own loading screen — so on the pages this
+  // still covers the only honest signal left is the fonts, with the deadline
+  // above catching the case where even those never resolve.
+  const fraction = fontsReady ? 1 : 0.5
 
   // The frame loop reads these; React state is only for the phase changes.
   const drive = useRef({ fraction, complete })
@@ -355,7 +303,7 @@ export function Loader({ dict }: { dict: Dictionary['nav'] }) {
               <i />
               <i />
             </span>
-            <span className="loader-file">build_street.py</span>
+            <span className="loader-file">build_shop.py</span>
             <span className="tabular loader-count">
               <span ref={count}>000</span>%
             </span>

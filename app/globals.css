@@ -847,51 +847,9 @@ body {
 .screen-tab[aria-current='true'] {
   color: var(--screen-ground);
   background: var(--screen-accent);
-}
-
-/* ---------------------------------------------------------------------------
-   THE FIRST SHOT
-
-   One section carries the first screen and the walk to the monitor, because
-   they are one camera move. The stage inside it is what gets pinned; everything
-   else is layered into that stage in depth order: light, room, copy, interface.
---------------------------------------------------------------------------- */
-.cinema {
-  position: relative;
-  isolation: isolate;
-}
-
-.cinema-stage {
-  position: relative;
-  min-height: 100svh;
-  overflow: hidden;
-}
-
-.cinema-atmos {
-  --atmos-key: var(--project-glow, var(--accent));
-  --atmos-fill: var(--accent-deep);
-  --atmos-x: 68%;
-  --atmos-y: 34%;
-  --atmos-x2: 8%;
-  --atmos-y2: 88%;
-}
-
-/* The copy column. Left, always: the desk sits right of centre at every
+}/* The copy column. Left, always: the desk sits right of centre at every
    breakpoint the scene defines, and type set over a monitor is type nobody
-   reads. */
-.cinema-copy {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.cinema-copy a,
-.cinema-copy button {
-  pointer-events: auto;
-}
-
-/* The copy layer is set on the room, not on the page, so it reads from the
+   reads. *//* The copy layer is set on the room, not on the page, so it reads from the
    room's roles rather than the sheet's.
 
    Without this the day sheet turns --ink near-black and lays it over a lit
@@ -899,16 +857,7 @@ body {
    dark type on a dark desk. The slates were already right, because .plate has
    always used --slate-*; rebinding the roles here extends the same rule to the
    headline and the button without either of them having to know they are on a
-   different ground. */
-.cinema-copy {
-  --ink: var(--slate-ink);
-  --ink-muted: var(--slate-ink-muted);
-  --warm: var(--slate-ink-muted);
-  --mark: var(--slate-mark);
-  --mark-ink: var(--slate);
-}
-
-/*
+   different ground. *//*
  * The desk controls.
  *
  * Pinned to the foot of the stage rather than left to flow after the hero copy.
@@ -924,84 +873,9 @@ body {
  * The 760px cut is the same breakpoint TowerScene uses to decide the
  * devices are inspectable at all. Below it nothing pins, the room is a small
  * picture at the top of a scrolling page, and there is nothing to control.
- */
-/*
- * The way back out of the machine.
- *
- * Sits above the screen interface rather than inside it, because it leaves the
- * whole zoom rather than navigating within it, and a control that undoes the
- * container should not look like one of the container's own controls.
- */
-/*
- * Belt and braces on the inert overlay.
- *
- * `inert` already stops pointer events, but this element spent its whole life
- * invisible and clickable and the failure was silent: clicks landed on nothing
- * and the room simply did not respond. A declarative rule means the same fact
- * is stated where a reader of the stylesheet will see it, and it holds even if
- * the attribute is ever dropped from the markup.
- */
-.cinema-screen[inert] {
-  pointer-events: none;
-}
-
-/* The same statement for the other half of the crossfade. `.cinema-copy` is
+ *//* The same statement for the other half of the crossfade. `.cinema-copy` is
    already pointer-events: none, but its links and buttons opt back in above, so
-   without this the exception would survive the attribute it is meant to obey. */
-.cinema-copy[inert] a,
-.cinema-copy[inert] button {
-  pointer-events: none;
-}
-
-.cinema-exit {
-  position: absolute;
-  /*
-   * Below the header, not level with it.
-   *
-   * At `top: var(--gutter)` this began at 52px while the fixed .site-header
-   * (z-index 40, in the root stacking context) ended at 61px, so the header
-   * took the top 9px of the control: hit tests at both top corners returned
-   * the header, and only the lower two thirds of Back were actually clickable.
-   * Raising z-index here cannot win, because the stage is its own stacking
-   * context nested below the header's. Clearing it in geometry can.
-   *
-   * Driven off --header-h so it follows the header rather than agreeing with it
-   * by coincidence.
-   */
-  top: calc(var(--header-h) + 0.75rem);
-  left: var(--gutter);
-  z-index: 6;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--mark);
-  color: var(--ink);
-  background: color-mix(in oklab, var(--ground) 72%, transparent);
-  backdrop-filter: blur(6px);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    background-color var(--f4) var(--ease-out),
-    color var(--f4) var(--ease-out);
-}
-
-.cinema-exit:hover,
-.cinema-exit:focus-visible {
-  background: var(--mark);
-  color: var(--mark-ink);
-}
-
-.cinema-desk {
-  position: absolute;
-  right: var(--gutter);
-  bottom: clamp(1rem, 3.5vh, 2.25rem);
-  z-index: 4;
-  width: min(24rem, calc(100% - var(--gutter) * 2));
-  text-align: left;
-}
-
-/*
+   without this the exception would survive the attribute it is meant to obey. *//*
  * The device names draw as plain text and have to be pressable as buttons.
  *
  * Measured at 390px they were 23px tall, against the 44px a finger needs, and
@@ -1009,91 +883,18 @@ body {
  * target is expanded rather than the type, so the row still reads as a line of
  * names rather than a strip of chrome: 23 + 22 clears 44 and the horizontal
  * padding stays inside the 20px gap, so two names never share a target.
- */
-.cinema-desk ul button {
-  position: relative;
-}
-
-.cinema-desk ul button::after {
-  content: '';
-  position: absolute;
-  inset: -11px -8px;
-}
-
-/* Shown at every size again. They were hidden here because the three devices
+ *//* Shown at every size again. They were hidden here because the three devices
    were not interactive below 760 either, so the controls had nothing to drive.
    Now that they do, hiding these would leave a phone with objects it can touch
-   and a screen reader with no way to reach them at all. */
-
-/* Something for the copy to sit on where it crosses the desk. Anchored to the
-   bottom of the room, strongest where the type is, gone by mid-frame.
-
-   Mixed from --slate, not --gate: the room is a dark interior under either
-   sheet, and --gate turns pale on the day one, which put a milky wash over the
-   desk instead of a shadow under the type. */
-.cinema-room::after {
-  content: '';
-  position: absolute;
-  inset: 30% 0 0 0;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    color-mix(in oklab, var(--slate) 34%, transparent) 62%,
-    color-mix(in oklab, var(--slate) 68%, transparent)
-  );
-}
-
-/*
+   and a screen reader with no way to reach them at all. *//*
  * The way in, for a keyboard.
  *
  * The first screen is the street, and the street's own way in is a click on
  * the monitor or on a lot. Neither exists for a keyboard, so this control does:
  * out of sight until it has focus, then drawn where Back is drawn, in the same
  * register as the skip link at the top of the document.
- */
-.cinema-enter {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-.cinema-enter:focus-visible {
-  top: calc(var(--header-h) + 0.75rem);
-  left: var(--gutter);
-  z-index: 6;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0.5rem 0.9rem;
-  clip-path: none;
-  background: var(--mark);
-  color: var(--mark-ink);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-/* The interface that takes over from the panel. Full-bleed, because by the time
-   it fades up the panel behind it is the frame. */
-.cinema-screen {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  opacity: 0;
-  container-type: size;
-  container-name: screen;
-}
-
-/*
+ *//* The interface that takes over from the panel. Full-bleed, because by the time
+   it fades up the panel behind it is the frame. *//*
  * The glass, on the DOM half of the screen.
  *
  * The texture carries its own tube (see TowerScene), but once the walk
@@ -1113,19 +914,7 @@ body {
  * which clears AA by four hundredths at the exact corner the pager sits in. At
  * 0.16 it is 5.14:1. A tube that costs a contrast ratio is a costume, not a
  * material, and one that clears by a rounding error is the same thing.
- */
-.cinema-screen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(to bottom, rgb(0 0 0 / 5%) 0 1px, transparent 1px 3px),
-    radial-gradient(125% 105% at 50% 50%, transparent 58%, rgb(0 0 0 / 16%));
-}
-
-/*
+ *//*
  * Every type size on the screen is clamped, and that is not belt and braces.
  *
  * These were authored in bare cqw against a monitor drawn inside a desktop
@@ -1941,22 +1730,7 @@ body {
   .loader-caret {
     animation: none;
   }
-}
-
-/* ---------------------------------------------------------------------------
-   THE ROOM AS A BLOCK
-
-   Desktop: it fills the pinned stage and the copy sits over it. Narrow: it is
-   the first screen's own box, so the canvas stops where the copy stops instead
-   of running behind everything below.
---------------------------------------------------------------------------- */
-.cinema-room {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-/*
+}/*
  * Reduced motion only, and it has to match .cinema-copy above exactly.
  *
  * This still said `max-width: 1023px` after the copy stopped doing so, and the
@@ -2176,30 +1950,7 @@ html[data-machine='open'] body {
 .screen-pager-count {
   font-size: clamp(0.6rem, 1.8cqw, 0.85rem);
   letter-spacing: 0.12em;
-}
-
-/*
- * The interface when there is no room to draw it in.
- *
- * Reduced motion, no WebGL, or simply the moments before the scene commits. It
- * is the same element the panel receives, laid into the page at a readable size
- * instead of onto a plane in a scene. Not a fallback in the apologetic sense:
- * this is the whole site, and everything in it works here.
- */
-.cinema-screen-flat {
-  position: relative;
-  inset: auto;
-  z-index: 3;
-  opacity: 1;
-  aspect-ratio: 16 / 10;
-  margin: 0 var(--gutter) clamp(3rem, 8vh, 6rem);
-  overflow: hidden;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  background: var(--slate);
-}
-
-/*
+}/*
  * The interface, pinned to the monitor.
  *
  * --panel-* are written by the scene every frame: the panel's world corners
@@ -2210,20 +1961,7 @@ html[data-machine='open'] body {
  * Fixed rather than absolute because the projection is in viewport coordinates,
  * and the stage it would otherwise be positioned against is pinned and
  * transformed underneath it.
- */
-.cinema-screen-panel {
-  position: fixed;
-  inset: auto;
-  left: var(--panel-x, 0px);
-  top: var(--panel-y, 0px);
-  width: var(--panel-w, 100vw);
-  height: var(--panel-h, 100vh);
-  container-type: size;
-  container-name: screen;
-  overflow: hidden;
-}
-
-/*
+ *//*
  * The screen, when the screen is a panel rather than the viewport.
  *
  * The OS layout carries rem floors and rem paddings — a minimum body size, a
@@ -2237,33 +1975,7 @@ html[data-machine='open'] body {
  * minimum inside a 170px-tall monitor overflowed the panel and cut the menu in
  * half. Everything below is the same design expressed purely in container
  * units, so it fits the panel at any distance.
- */
-.cinema-screen-panel .screen-desk {
-  padding: 9cqh 7cqw 5cqh;
-  gap: 1.6cqh;
-  max-width: 100%;
-  /* A screen scrolls. This is the safety net for a locale whose labels run
-     longer than English or a panel framed tighter than expected: the content
-     stays reachable rather than being clipped by the bezel. */
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.cinema-screen-panel .screen-menu {
-  margin-top: 1.4cqh;
-  gap: 0.8cqh;
-}
-
-.cinema-screen-panel .screen-menu-item {
-  font-size: 3.2cqw;
-  padding: 1.2cqh 2.4cqw;
-}
-
-.cinema-screen-panel .screen-chrome {
-  padding-top: 1.6cqh;
-}
-
-/* ---------------------------------------------------------------------------
+ *//* ---------------------------------------------------------------------------
    THE DESKTOP
 
    What is actually on the machine: a wallpaper, a row of applications, and the
@@ -2413,35 +2125,9 @@ html[data-machine='open'] body {
   height: 1px;
   background: currentColor;
   opacity: 0.6;
-}
-
-/*
- * The machine's title bar, at panel size.
- *
- * The name was wrapping to two lines inside a 290px-wide screen, which turned a
- * chrome bar into a quarter of the whole display and pushed the desktop into
- * what was left. A title bar is one line by definition: it truncates rather
- * than growing, exactly as every windowing system's does.
- */
-.cinema-screen-panel .screen-url {
-  max-width: 46cqw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* The name is the wallpaper's, not a page heading: it sets the desktop rather
+}/* The name is the wallpaper's, not a page heading: it sets the desktop rather
    than opening it, so it steps back to leave the applications the loudest
-   thing on the screen. */
-.cinema-screen-panel .screen-home-name {
-  font-size: 5.2cqw;
-}
-
-.cinema-screen-panel .screen-home-kicker {
-  font-size: 1.3cqw;
-}
-
-/*
+   thing on the screen. *//*
  * The window, at panel size.
  *
  * The base inset is `max(11cqh, header + 1.5rem)`, and the rem half of that max
@@ -2452,90 +2138,18 @@ html[data-machine='open'] body {
  * Same composition in container units: clear of the title bar, desktop still
  * visible around three sides, and enough of the screen left that what opens in
  * it is legible.
- */
-.cinema-screen-panel .screen-window {
-  inset: 17cqh 6cqw 6cqh;
-}
-
-/* The pane inside it is laid out for the whole screen, so at window size it
+ *//* The pane inside it is laid out for the whole screen, so at window size it
    loses the picture and keeps the words. A photograph two centimetres across
    on a monitor read from a desk away is not showing anybody the work; the
-   name, what it is, the facts and the way to the live site are. */
-.cinema-screen-panel .screen-window .screen-site {
-  display: none;
-}
-
-.cinema-screen-panel .screen-window .screen-plate {
-  position: absolute;
-  inset: 0;
-  background: none;
-  border-top: 0;
-  padding: 2.5cqh 3cqw;
-  gap: 1cqh;
-  overflow-y: auto;
-}
-
-/*
+   name, what it is, the facts and the way to the live site are. *//*
  * Type inside a window, at panel size.
  *
  * Everything in here was scaled for a screen that fills a viewport. In a 256px
  * window the same values give a project name larger than the window is tall and
  * a switcher that lands on top of the description. These are the same
  * proportions taken down to the size of the thing actually holding them.
- */
-.cinema-screen-panel .screen-window .screen-plate-head {
-  flex-wrap: wrap;
-  gap: 0.6cqw 1.4cqw;
-}
-
-.cinema-screen-panel .screen-window .screen-name {
-  font-size: 3.4cqw;
-}
-
-.cinema-screen-panel .screen-window .screen-index,
-.cinema-screen-panel .screen-window .screen-category {
-  font-size: 1.25cqw;
-}
-
-.cinema-screen-panel .screen-window .screen-description {
-  font-size: 1.5cqw;
-  line-height: 1.45;
-  max-width: none;
-}
-
-.cinema-screen-panel .screen-window .screen-facts li {
-  font-size: 1.25cqw;
-}
-
-.cinema-screen-panel .screen-window .screen-cta {
-  font-size: 1.3cqw;
-  padding: 1.2cqh 2cqw;
-}
-
-/* The switcher belongs to the window, at its foot, in the flow — not floating
-   over whatever the pane happens to be showing. */
-.cinema-screen-panel .screen-window .screen-tabs {
-  position: static;
-  justify-content: flex-start;
-  gap: 1cqw;
-  margin-top: 1.4cqh;
-  padding-top: 1.4cqh;
-  border-top: 1px solid color-mix(in oklab, currentColor 18%, transparent);
-}
-
-.cinema-screen-panel .screen-window .screen-tab {
-  font-size: 1.25cqw;
-  padding: 0.9cqh 1.6cqw;
-}
-
-.cinema-screen-panel .screen-window .screen-work {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  min-height: 0;
-  height: 100%;
-}
-
-/*
+ *//* The switcher belongs to the window, at its foot, in the flow — not floating
+   over whatever the pane happens to be showing. *//*
  * A shortcut's second line: the address it goes to.
  *
  * The arrow in the mark is a convention and conventions can be missed; the host
@@ -2547,15 +2161,7 @@ html[data-machine='open'] body {
   color: var(--slate-ink-muted);
   opacity: 0.85;
   text-transform: none;
-}
-
-/* With the name gone from the desktop the applications start at the top, so the
-   grid takes the room the heading was using. */
-.cinema-screen-panel .screen-apps-label {
-  margin-bottom: 1.8cqh;
-}
-
-/*
+}/*
  * The bar, while it is standing on the room.
  *
  * Until it lifts, the header has no ground of its own — that is deliberate, so

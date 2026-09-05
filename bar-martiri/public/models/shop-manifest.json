@@ -3,15 +3,15 @@
  "groups": {
   "shopJoined": {
    "size": 2048,
-   "atlas": "shopBaked.jpg"
+   "atlas": "shopBaked.png"
   },
   "machinesJoined": {
    "size": 2048,
-   "atlas": "machinesBaked.jpg"
+   "atlas": "machinesBaked.png"
   },
   "signpostJoined": {
-   "size": 1024,
-   "atlas": "signpostBaked.jpg"
+   "size": 2048,
+   "atlas": "signpostBaked.png"
   },
   "floor": {
    "size": 2048,
@@ -59,11 +59,6 @@
     "color": "#f2f4ff",
     "gain": 0.75,
     "bloom": false
-   },
-   "globe": {
-    "color": "#ffe4fb",
-    "gain": 0.8,
-    "bloom": true
    },
    "lantern": {
     "color": "#ffe3a8",
@@ -153,6 +148,12 @@
    "vendBtn_prev": "plateWhite",
    "vendBtn_next": "plateWhite",
    "vendGlow": "vendGlow",
+   "smallEdge1": "cyan",
+   "smallEdge2": "cyan",
+   "smallEdge3": "cyan",
+   "smallEdge4": "cyan",
+   "tallEdge": "cyan",
+   "smallEdge5": "cyan",
    "portalStrip": "cyan",
    "holoRing": "holo",
    "ringLamp0": "white",
@@ -170,8 +171,8 @@
    "neonScoop1": "pink",
    "neonCherry": "red",
    "poleTip": "ledCyan",
-   "globe0": "globe",
-   "globe1": "globe",
+   "lampBar0": "cyan",
+   "lampBar1": "cyan",
    "poleLed0": "ledCyan",
    "poleLed1": "ledRed",
    "poleLed2": "ledGreen",
@@ -204,10 +205,10 @@
    "fluoTube1",
    "fluoTube2",
    "fluoTube3",
-   "globe0",
-   "globe1",
    "greenDot",
    "holoRing",
+   "lampBar0",
+   "lampBar1",
    "lantern0",
    "lantern1",
    "neonCherry",
@@ -238,6 +239,12 @@
    "ringLamp1",
    "ringLamp2",
    "ringLamp3",
+   "smallEdge1",
+   "smallEdge2",
+   "smallEdge3",
+   "smallEdge4",
+   "smallEdge5",
+   "tallEdge",
    "vendBtn_next",
    "vendBtn_prev",
    "vendGlow",
@@ -286,5 +293,5 @@
   ]
  },
  "glb": "shop.glb",
- "glbBytes": 402524
+ "glbBytes": 431264
 }

@@ -53,11 +53,35 @@ FACING = {'+z': (math.pi / 2, 0, 0), '-x': (math.pi / 2, 0, -math.pi / 2), '-z':
 FLOOR_TEXT = (0, 0, -math.pi / 2)             # lying down, read from the -x/-z corner
 
 # ---------------------------------------------------------------- fonts
-WINFONTS = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
-def font(fn):
-    p = os.path.join(WINFONTS, fn)
-    return bpy.data.fonts.load(p) if os.path.exists(p) else bpy.data.fonts[0]
-FONT = {'sign': font('consolab.ttf'), 'neon': font('comicbd.ttf'), 'kanji': font('msgothic.ttc'), 'floor': font('segoeuib.ttf')}
+#
+# Four roles, by weight and character rather than by name: a bold monospace
+# for the signage, a bold informal/rounded face for the neon script, a gothic
+# sans standing in for the floor's "kanji" slot (the label it actually carries,
+# LABELS['kanji'], is the Latin word "SPILLE" — no CJK glyphs are ever drawn
+# through it, so any face with Latin coverage serves), and a bold sans for the
+# floor labels. Each of these was a single Windows path, because this was
+# built on Windows and had never run anywhere else — the first candidate that
+# exists on the machine actually running this is what gets used.
+FONT_CANDIDATES = {
+    'sign': (r'C:\Windows\Fonts\consolab.ttf',
+             '/System/Library/Fonts/Supplemental/Courier New Bold.ttf',
+             '/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf'),
+    'neon': (r'C:\Windows\Fonts\comicbd.ttf',
+             '/System/Library/Fonts/Supplemental/Comic Sans MS Bold.ttf',
+             '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    'kanji': (r'C:\Windows\Fonts\msgothic.ttc',
+              '/System/Library/Fonts/Hiragino Sans GB.ttc',
+              '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    'floor': (r'C:\Windows\Fonts\segoeuib.ttf',
+              '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+              '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+}
+def font(role):
+    for p in FONT_CANDIDATES[role]:
+        if os.path.exists(p):
+            return bpy.data.fonts.load(p)
+    raise SystemExit(f'font: none of the candidates for {role!r} exist on this machine; add its real path')
+FONT = {role: font(role) for role in FONT_CANDIDATES}
 def face_for(body):
     # kana and kanji need the gothic face; Latin words read better in the rounded one
     return 'kanji' if any(ord(ch) > 0x2fff for ch in body) else 'neon'
@@ -116,6 +140,7 @@ M = {k: mat(k, *v) for k, v in {
     'wallDark':    ('#2a8fa3', 0.85),
     'wallBlue':    ('#56c4d8', 0.85),
     'brick':       ('#d8c7a6', 0.9),
+    'spray':       ('#4a4460', 0.88),
     'roof':        ('#b28a52', 0.85),
     'trim':        ('#1f6d7c', 0.8),
     'orange':      ('#e8712f', 0.6),
@@ -160,7 +185,6 @@ GLOW = {
     'red':     ('#ff3b5c', 3, 1.1),
     'blue':    ('#3d6bff', 3, 1.1),
     'white':   ('#f2f4ff', 2.5, 0.75, False),
-    'globe':   ('#ffe4fb', 9, 0.8),
     'lantern': ('#ffe3a8', 5, 0.8),
     'holo':    ('#3cf5ff', 12, 0.9),
     'platePink':   ('#ff2f7a', 1.2, 1.0, False),
@@ -390,10 +414,16 @@ bx('neonOpenBoard', 0.06, 0.5, 1.0, -2.25, 2.95, 0.55, 'MACHINES', M['black'])
 bx('neonOpenPost', 0.08, 2.4, 0.08, -2.2, R + 1.3, 0.55, 'MACHINES', M['metalDark'])
 # chalkboard easel at the +z end of the counter
 EX, EZ = -3.05, 2.45
+# The rotation tilts each leg about its OWN centre, not about the point where
+# it actually meets the ground or the board — so the sign of the angle is
+# what decides which end ends up wider. The signs here had it backwards: legs
+# that pinched to a point at the floor and splayed apart at the top, which is
+# a table balanced on its own scissors rather than a stable A-frame. Rendered
+# side-on to confirm before and after; flipping the sign is the whole fix.
 for s, (dx, dz) in enumerate(((-0.12, 0), (0.12, 0))):
     for k, zz in enumerate((-0.3, 0.3)):
         cy(f'easelLeg{s}{k}', 0.025, 1.25, EX + dx * (1.4 if s else 1.0), F + 0.62, EZ + zz, 'SHOP', M['woodDark'], seg=8,
-           rot=(0, (0.22 if s else -0.22), 0))
+           rot=(0, (-0.22 if s else 0.22), 0))
 bx('easelBoard', 0.06, 0.9, 0.7, EX - 0.05, F + 0.78, EZ, 'SHOP', M['black'], rot=(0, -0.22, 0))
 bx('easelFrame', 0.04, 1.0, 0.8, EX - 0.02, F + 0.78, EZ, 'SHOP', M['woodDark'], rot=(0, -0.22, 0))
 for k in range(4):
@@ -494,18 +524,31 @@ bx('greenBoardTop', 0.72, 0.05, 0.12, -1.95, F + 0.9, 2.75, 'SHOP', M['greenDark
 bx('tickerBox', 4.5, 1.1, 0.35, 0.05, R + 0.57, BZ1 - 0.1, 'MACHINES', M['black'])
 bx('tickerBezel', 4.35, 0.95, 0.06, 0.05, R + 0.57, BZ1 + 0.09, 'MACHINES', M['trim'])
 screen('tickerScreen', 4.15, 0.75, 0.05, R + 0.57, BZ1 + 0.125, '+z')
+def screen_edge(name, w, x, y, z):
+    """A thin cyan strip along a screen's bottom edge, sitting proud of the
+    bezel: the ambient backlight a real LED panel shows around its own frame,
+    and the cheapest cue that this is a screen rather than a picture on the
+    wall. bigScreen already had one (portalStrip, below); the rest of the bank
+    gets the same treatment rather than being the one modern panel among five
+    plain ones."""
+    return glow(bx(name, w, 0.035, 0.035, x, y, z, 'EMISSIVE', EM['cyan'], bevel=False), 'cyan')
+
 for i, xc in enumerate((0.77, -0.33, -1.44)):
     bx(f'smallFrame{i + 1}', 0.86, 0.74, 0.16, xc, R + 1.62, 1.28, 'MACHINES', M['metalDark'])
     screen(f'smallScreen{i + 1}', 0.76, 0.64, xc, R + 1.62, 1.37, '+z')
     hit(f'small{i + 1}', 0.86, 0.74, 0.3, xc, R + 1.62, 1.4)
+    screen_edge(f'smallEdge{i + 1}', 0.71, xc, R + 1.16, 1.41)
 bx('smallShelf', 3.3, 0.06, 0.4, -0.33, R + 1.22, 1.2, 'MACHINES', M['metal'])
 # the stack on the mast at the -x corner: a small screen, a tall one, another small one
 bx('smallFrame4', 0.86, 0.74, 0.16, -1.46, R + 2.58, 1.31, 'MACHINES', M['metalDark'])
 screen('smallScreen4', 0.76, 0.64, -1.46, R + 2.58, 1.4, '+z')
+screen_edge('smallEdge4', 0.71, -1.46, R + 2.12, 1.44)
 bx('tallFrame', 0.9, 1.26, 0.16, -1.49, R + 3.8, 1.36, 'MACHINES', M['metalDark'])
 screen('tallScreen', 0.8, 1.16, -1.49, R + 3.8, 1.45, '+z')
+screen_edge('tallEdge', 0.75, -1.49, R + 3.08, 1.49)
 bx('smallFrame5', 0.86, 0.74, 0.16, -1.51, R + 5.05, 1.4, 'MACHINES', M['metalDark'])
 screen('smallScreen5', 0.76, 0.64, -1.51, R + 5.05, 1.49, '+z')
+screen_edge('smallEdge5', 0.71, -1.51, R + 4.59, 1.53)
 cy('mastScreens', 0.06, 6.2, -1.5, R + 3.1, 1.15, 'MACHINES', M['metalDark'], seg=10)
 # the big screen on its stand, the speaker on top
 BSX, BSY, BSZ = 0.68, 3.8, 0.52
@@ -533,6 +576,8 @@ for i in range(22):
 tube('pipeUtil1', [(UX + 0.15, R + 0.3, -1.6), (UX + 0.15, F + 0.6, -1.6), (UX + 0.15, F + 0.6, -0.4), (UX + 0.15, F + 1.4, -0.4)], 0.06, 'SHOP', M['pipe'])
 tube('pipeUtil2', [(UX + 0.12, R + 0.6, 0.6), (UX + 0.12, F + 1.1, 0.6), (UX + 0.12, F + 1.1, 1.5), (UX + 0.12, F + 0.3, 1.5)], 0.045, 'SHOP', M['pipe'])
 tube('pipeUtil3', [(UX + 0.2, R + 0.1, -3.4), (UX + 0.2, F + 2.3, -3.4), (UX + 0.6, F + 2.3, -3.4), (UX + 0.6, F + 2.3, -2.2)], 0.05, 'SHOP', M['pipe'])
+text('grafitiTag', LABELS['kanji'], 'neon', 0.42, UX + 0.03, F + 1.35, -2.9, 'SHOP', M['spray'],
+     facing='+x', extrude=0.003)
 bx('powerWall', 0.14, 1.25, 0.8, UX + 0.07, F + 1.2, -0.9, 'SHOP', M['white'])
 bx('powerWallLogo', 0.02, 0.06, 0.4, UX + 0.15, F + 1.55, -0.9, 'SHOP', M['grey'], bevel=False)
 bx('junction1', 0.18, 0.5, 0.4, UX + 0.09, F + 1.9, 0.0, 'SHOP', M['grey'])
@@ -611,7 +656,16 @@ cy('parasolTop', 0.06, 0.12, PBX + 1.0, F + 2.88, PBZ - 0.72, 'SHOP', M['white']
 bx('sunbedFrame', 0.72, 0.06, 1.8, PBX, F + 0.32, PBZ, 'SHOP', M['woodDark'])
 for k in range(7):
     bx(f'sunbedSlat{k}', 0.66, 0.03, 0.18, PBX, F + 0.37, PBZ - 0.75 + k * 0.25, 'SHOP', M['wood'], bevel=False)
-bx('sunbedBack', 0.66, 0.05, 0.62, PBX, F + 0.62, PBZ - 1.05, 'SHOP', M['wood'], rot=(-0.9, 0, 0))
+# The board was rotated about its own centre, which is not where a reclining
+# backrest actually pivots — the centre of a tilted board and the edge where
+# it meets the bed are two different points, and only the second one should
+# stay put. Positioned by its own centre, the whole board floated well above
+# and beyond the bed with a visible gap of air under it. Measured from the
+# built scene: the board's lowest corner needed to move (0, -0.56, +0.02) in
+# Blender space to land on the slats' rear edge, which in these three.js
+# coordinates is z -0.56 closer and y +0.02 higher — the position below is
+# the old one plus that correction, not a re-guess.
+bx('sunbedBack', 0.66, 0.05, 0.62, PBX, F + 0.6434, PBZ - 0.4869, 'SHOP', M['wood'], rot=(-0.9, 0, 0))
 bx('sunbedTowel', 0.5, 0.03, 1.1, PBX, F + 0.4, PBZ + 0.25, 'SHOP', M['fabric'], bevel=False)
 for dx, dz in ((-0.3, -0.75), (0.3, -0.75), (-0.3, 0.75), (0.3, 0.75)):
     cy(f'sunbedLeg{dx:+.0f}{dz:+.0f}', 0.025, 0.3, PBX + dx, F + 0.15, PBZ + dz, 'SHOP', M['woodDark'], seg=6)
@@ -619,19 +673,38 @@ sph('beachBall', 0.22, PBX + 1.55, F + 0.22, PBZ + 0.9, 'SHOP', M['orange'], seg
 
 # ---------------------------------------------------------------- the signpost
 PX, PZ = -4.05, -5.05
-for i, (s, h) in enumerate(((0.95, 0.1), (0.7, 0.1), (0.45, 0.1))):
-    bx(f'postBase{i}', s, h, s, PX, F + 0.05 + i * 0.1, PZ, 'SIGNPOST', M['trim'])
-cy('pole', 0.09, 6.2, PX, F + 3.1, PZ, 'SIGNPOST', M['black'], seg=12)
-cy('poleTop', 0.05, 1.1, PX, F + 6.7, PZ, 'SIGNPOST', M['metalDark'], seg=8)
-glow(bx('poleTip', 0.08, 0.14, 0.08, PX, F + 7.3, PZ, 'EMISSIVE', EM['ledCyan']), 'ledCyan')
-# the arm with the two globes
+# One low plinth instead of the three stacked, tapering cubes the base used to
+# be — a wedding-cake base is the same "ornamental ironwork" read as the glass
+# globes below were, and it is gone for the same reason.
+cy('postBase', 0.55, 0.14, PX, F + 0.07, PZ, 'SIGNPOST', M['trim'], seg=24)
+# The mast itself, 1.4m taller: base unchanged at the floor, everything above
+# it — top cap, beacon, arm, lamps — carried up by the same amount so the
+# whole assembly stays proportioned rather than just stretching the shaft.
+cy('pole', 0.09, 7.6, PX, F + 3.8, PZ, 'SIGNPOST', M['black'], seg=12)
+cy('poleTop', 0.05, 1.1, PX, F + 8.15, PZ, 'SIGNPOST', M['metalDark'], seg=8)
+glow(bx('poleTip', 0.08, 0.14, 0.08, PX, F + 8.75, PZ, 'EMISSIVE', EM['ledCyan']), 'ledCyan')
+# The arm stays at its original height, not carried up with the mast.
+#
+# Moving it up by the same 1.4m as the mast is what made this "taller" in the
+# first place, but the sign boards below it never moved — so the gap between
+# the top sign and the lamp arm more than doubled (0.98m to 2.38m, measured),
+# splitting the post into signs bunched low and a lamp stranded high with
+# nothing between them. The mast above the arm is still the full 1.4m taller;
+# only the arm+fixture, which has to stay grouped with the signs it lights,
+# went back to where it read correctly.
 GY = 2.1
 bx('poleArm', 0.1, 0.1, 2.4, PX, GY, PZ, 'SIGNPOST', M['black'])
 bx('poleArmBox', 0.3, 0.3, 0.3, PX, GY, PZ, 'SIGNPOST', M['metalDark'])
+# A pair of flat LED luminaires where the old lamp hung a pair of frosted
+# glass globes. A round glass globe on an iron arm is a Victorian street
+# lamp's whole silhouette; a flat bar recessed into a dark housing is a
+# modern one, and it is lit in the shop's own neon cyan rather than the
+# pale antique pink the globe used, so the fixture reads as the same
+# lighting design as the signage below it instead of an older one bolted on.
 for i, zc in enumerate((PZ - 1.05, PZ + 1.05)):
-    cy(f'globeStem{i}', 0.03, 0.3, PX, GY - 0.2, zc, 'SIGNPOST', M['black'], seg=8)
-    cy(f'globeCap{i}', 0.12, 0.08, PX, GY - 0.36, zc, 'SIGNPOST', M['black'], seg=12)
-    glow(sph(f'globe{i}', 0.42, PX, GY - 0.75, zc, 'EMISSIVE', EM['globe'], seg=24), 'globe')
+    cy(f'lampStem{i}', 0.03, 0.3, PX, GY - 0.2, zc, 'SIGNPOST', M['black'], seg=8)
+    bx(f'lampHousing{i}', 0.4, 0.09, 0.22, PX, GY - 0.42, zc, 'SIGNPOST', M['metalDark'])
+    glow(bx(f'lampBar{i}', 0.34, 0.03, 0.16, PX - 0.05, GY - 0.465, zc, 'EMISSIVE', EM['cyan']), 'cyan')
 # LEDs on the pole between the signs
 for i, (yy, key) in enumerate(((1.2, 'ledCyan'), (0.85, 'ledRed'), (-0.4, 'ledGreen'), (-1.5, 'ledWhite'), (1.55, 'ledGreen'), (-2.6, 'ledRed'))):
     glow(bx(f'poleLed{i}', 0.08, 0.08, 0.08, PX - 0.11, yy, PZ + (0.12 if i % 2 else -0.12), 'EMISSIVE', EM[key]), key)
@@ -641,15 +714,24 @@ SIGNS = [('projects', LABELS['signs']['projects'], 'platePink', 0.4, +1),
          ('about', LABELS['signs']['about'], 'plateCyan', -1.82, -1),
          ('credits', LABELS['signs']['credits'], 'plateOrange', -2.27, +1)]
 SW, SH, SL = 0.06, 0.38, 1.45
+# A board shaped like an arrow, point and all, is a wooden trail-sign fingerpost
+# — the same "old-school" silhouette the frosted glass lamp globes used to be.
+# These are a plain rectangular tab now, like a modern wayfinding plaque, and
+# directionality moves to one small chevron at the end rather than the whole
+# board's outline: legible at a glance without dressing every sign as a fork
+# in a forest path.
 for sid, label, key, yc, d in SIGNS:
-    frame = prism('signFrame_' + sid, [(yc - SH / 2 - 0.05, PZ - SL / 2 - 0.05 * (d < 0)), (yc - SH / 2 - 0.05, PZ + SL / 2 + 0.05 * (d > 0)),
-                                       (yc, PZ + SL / 2 + (0.32 if d > 0 else 0.05)), (yc + SH / 2 + 0.05, PZ + SL / 2 + 0.05 * (d > 0)),
-                                       (yc + SH / 2 + 0.05, PZ - SL / 2 - 0.05 * (d < 0)), (yc, PZ - SL / 2 - (0.32 if d < 0 else 0.05))],
+    frame = prism('signFrame_' + sid, [(yc - SH / 2 - 0.05, PZ - SL / 2 - 0.05), (yc - SH / 2 - 0.05, PZ + SL / 2 + 0.05),
+                                       (yc + SH / 2 + 0.05, PZ + SL / 2 + 0.05), (yc + SH / 2 + 0.05, PZ - SL / 2 - 0.05)],
                   0.08, PX - 0.06, 'SIGNPOST', M['black'])
-    plate = prism('plate_' + sid, [(yc - SH / 2, PZ - SL / 2), (yc - SH / 2, PZ + SL / 2), (yc, PZ + SL / 2 + (0.27 if d > 0 else 0)),
-                                   (yc + SH / 2, PZ + SL / 2), (yc + SH / 2, PZ - SL / 2), (yc, PZ - SL / 2 - (0.27 if d < 0 else 0))],
+    plate = prism('plate_' + sid, [(yc - SH / 2, PZ - SL / 2), (yc - SH / 2, PZ + SL / 2),
+                                   (yc + SH / 2, PZ + SL / 2), (yc + SH / 2, PZ - SL / 2)],
                   0.05, PX - 0.1, 'EMISSIVE', EM[key])
     glow(plate, key)
+    # the one small arrow: a flat black chevron just past whichever end points home
+    tip_z = PZ + SL / 2 if d > 0 else PZ - SL / 2
+    prism('signTip_' + sid, [(yc - 0.09, tip_z), (yc + 0.09, tip_z), (yc, tip_z + d * 0.16)],
+          0.05, PX - 0.06, 'SIGNPOST', M['black'])
     # white on the warm plates, ink on the cool ones, the way the reference's read at a distance
     ink = M['text'] if key in ('platePink', 'plateRed') else M['ink']
     text('signText_' + sid, label, 'sign', 0.25, PX - 0.145, yc + 0.005, PZ, 'SIGNPOST', ink, facing='-x', extrude=0.012, bold=0.004)
@@ -688,7 +770,7 @@ light('key', 'SPOT', 1.0, 15.0, 0.5, float(os.environ.get('SHOP_KEY', '700')), (
 # two pools on the floor: cyan by the machines, pink by the signpost, spots pointing down so they
 # stay pools instead of washing the whole disc
 light('cyanFill', 'SPOT', 3.0, -0.4, 5.6, float(os.environ.get('SHOP_CYAN', '7500')), (0.2, 0.9, 1.0), size=0.8, rot=(0, 0, 0), cone=135, blend=0.9)
-light('pinkFill', 'SPOT', -6.2, -0.4, -4.6, float(os.environ.get('SHOP_PINK', '7500')), (1.0, 0.5, 0.3), size=0.8, rot=(0, 0, 0), cone=135, blend=0.9)
+light('pinkFill', 'SPOT', -6.2, -0.4, -4.6, float(os.environ.get('SHOP_PINK', '7500')), (1.0, 0.18, 0.6), size=0.8, rot=(0, 0, 0), cone=135, blend=0.9)
 
 # ---------------------------------------------------------------- cameras and previews
 def camera(name, pos, lens=22):

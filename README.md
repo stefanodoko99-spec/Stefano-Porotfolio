@@ -88,7 +88,7 @@ but nothing claims a client, an outcome, a metric or a date it cannot support.
 
 The first screen is a street that has to arrive over the network, so
 [components/ui/Loader.tsx](components/ui/Loader.tsx) covers the wait with the
-street being written: lines of `build_street.py` and `bake_export.py`, the real
+shop being written: lines of `build_shop.py` and `bake_shop.py`, the real
 calls and the real mesh names, typed into a terminal as the files land. The
 typing is driven by the actual byte progress (files arrived out of files
 expected, counted off resource timing, which does not care that R3F loads
@@ -118,7 +118,7 @@ it has keyboard focus, in the same register as the skip link.
 ## Phones
 
 The same street, with three differences. The wide shot is solved from the
-frame's aspect (`homeFor` in `TowerScene`): a landscape frame holds the whole
+frame's aspect: a landscape frame holds the whole
 row, a portrait one stands over the garage and the bank, tilted down, and the
 rest of the street is a swipe away. The mirror road is a second render of the
 whole scene every frame, so below 760px the road is a dark floor instead;
@@ -150,7 +150,7 @@ exists as a real button over the street, visually hidden until it has focus
 
 The first screen and the walk toward the workstation are one pinned section,
 [components/sections/Cinema.tsx](components/sections/Cinema.tsx). Scroll drives a
-camera in `TowerScene`, not a CSS transform: the position travels through
+camera in the scene, not a CSS transform: the position travels through
 [lib/motion/cinema.ts](lib/motion/cinema.ts) and is read inside the frame loop,
 so the scene never re-renders to move. As the panel fills the frame a real DOM
 interface crossfades over it, and from there the switcher and both links are
@@ -202,24 +202,23 @@ the sign post; the traffic light at the crossing runs red, green, amber in the
 frame loop. Walking into a machine plays a CRT coming on, and the walk out is
 the same tube switching off.
 
-## The street (Blender)
+## The shop (Blender)
 
-The scene is procedural. `scripts/tower/build_street.py` builds every lot, lamp
-and hitbox from code and saves `garage.blend` beside itself;
-`scripts/tower/bake_export.py` joins each bake group, unwraps it, bakes the
-lighting to a 2048 px atlas with Cycles and exports a Draco GLB with no
-materials, into a `public/` folder two levels up from the blend it is run on.
-Names are the contract: the scene assigns materials by mesh name.
+The scene is procedural. `bar-martiri/blender/build_shop.py` builds the stall,
+the machines, the signpost and every hitbox from code; `bake_shop.py` joins
+each group, unwraps it, bakes the lighting to an atlas with Cycles and exports
+a Draco GLB with no materials. Names are the contract: the scene assigns
+materials by mesh name.
 
 ```bash
-blender -b -P scripts/tower/build_street.py
-blender -b assets/blender/garage.blend -P scripts/tower/bake_export.py -- 2048 48
+blender -b -P bar-martiri/blender/build_shop.py
+blender -b bar-martiri/blender/shop.blend -P bar-martiri/blender/bake_shop.py -- 48
 ```
 
-The repo keeps the blends in `assets/blender/` and the served files in
-`public/models/tower/`, so after a bake copy the atlases and the GLB across (the
-GLB as `tower.glb`). A full bake is about an hour on a laptop CPU; a third
-argument names the groups to bake, comma separated, for a partial one.
+The site serves the results from `public/bar/`, and the Draco decoder it shares
+with nothing else lives at `public/draco/`. `bar-martiri/` remains a runnable
+Vite project of its own — that is where the scene is developed — and
+`components/three/bar/` is the copy the Next app mounts.
 
 ## Day and night
 

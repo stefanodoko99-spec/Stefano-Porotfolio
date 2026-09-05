@@ -40,11 +40,6 @@
    "gain": 0.75,
    "bloom": false
   },
-  "globe": {
-   "color": "#ffe4fb",
-   "gain": 0.8,
-   "bloom": true
-  },
   "lantern": {
    "color": "#ffe3a8",
    "gain": 0.8,
@@ -133,6 +128,12 @@
   "vendBtn_prev": "plateWhite",
   "vendBtn_next": "plateWhite",
   "vendGlow": "vendGlow",
+  "smallEdge1": "cyan",
+  "smallEdge2": "cyan",
+  "smallEdge3": "cyan",
+  "smallEdge4": "cyan",
+  "tallEdge": "cyan",
+  "smallEdge5": "cyan",
   "portalStrip": "cyan",
   "holoRing": "holo",
   "ringLamp0": "white",
@@ -150,8 +151,8 @@
   "neonScoop1": "pink",
   "neonCherry": "red",
   "poleTip": "ledCyan",
-  "globe0": "globe",
-  "globe1": "globe",
+  "lampBar0": "cyan",
+  "lampBar1": "cyan",
   "poleLed0": "ledCyan",
   "poleLed1": "ledRed",
   "poleLed2": "ledGreen",
