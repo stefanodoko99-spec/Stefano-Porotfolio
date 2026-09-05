@@ -45,7 +45,28 @@ export const VIEWS: Record<Mode, View> = {
     // does for its own close-up.
     portrait: { position: v(-6.43, 1.02, -4.82), target: v(0, 1.6, -1) },
   },
-  projects: { position: v(1.15, -1.05, 5.25), target: v(1.15, -1.05, 3.06), distance: [1.6, 3.2], polar: [1.26, 1.67], azimuth: [-0.31, 0.31] },
+  // vendScreen and arcadeScreen (below) sit exactly at these targets already
+  // (checked against their Blender placement) — the standing distance is
+  // pulled in close enough that the screen itself fills the frame on
+  // arrival, rather than reading as one wall of the cabinet. Checked by
+  // rendering this exact position straight to the canvas (the click-through
+  // preview in a live tab does not repaint while the tab is backgrounded, so
+  // eyeballing it live there is not a real check) — 1.1 puts the vending
+  // screen edge-to-edge with a hair of cabinet frame showing.
+  //
+  // Both views repeat the same position as their own `portrait`: the
+  // k-scale a plain aspect<1 framing would otherwise apply is the "about"
+  // pullback built for a WIDE establishing shot standing further back on a
+  // narrow screen, which is backwards for a close-up already aimed at a
+  // screen that is itself portrait-shaped — undoing exactly the zoom this is.
+  projects: {
+    position: v(1.15, -1.05, 4.16),
+    target: v(1.15, -1.05, 3.06),
+    distance: [0.85, 1.6],
+    polar: [1.26, 1.67],
+    azimuth: [-0.31, 0.31],
+    portrait: { position: v(1.15, -1.05, 4.16), target: v(1.15, -1.05, 3.06) },
+  },
   about: {
     position: v(0.68, 3.35, 3.15),
     target: v(0.68, 3.35, 0.52),
@@ -56,7 +77,20 @@ export const VIEWS: Record<Mode, View> = {
     // the big screen and the row of small ones under it, which sit further left
     portrait: { position: v(-0.2, 2.95, 5.3), target: v(-0.2, 2.95, 0.52) },
   },
-  credits: { position: v(-0.58, -1.12, 4.5), target: v(-0.58, -1.18, 2.85), distance: [1.0, 2.4], polar: [0.94, 2.04], azimuth: [-0.63, 0.63] },
+  // target corrected to arcadeScreen's exact Blender centre (was 2.85, a
+  // leftover from the wider pre-zoom framing; the screen itself sits at
+  // 2.79). Distance 0.6 checked the same way as vending, above — the score
+  // / high-score / level HUD and the CREDITS title fill the canvas edge to
+  // edge with the joystick just entering frame at the bottom.
+  credits: {
+    position: v(-0.58, -1.16, 3.39),
+    target: v(-0.58, -1.18, 2.79),
+    distance: [0.45, 0.9],
+    polar: [0.94, 2.04],
+    azimuth: [-0.63, 0.63],
+    // same reasoning as projects' own portrait override, above
+    portrait: { position: v(-0.58, -1.16, 3.39), target: v(-0.58, -1.18, 2.79) },
+  },
   name: { position: v(-10.2, 6.3, 3.8), target: v(0, 0, -1), distance: [7, 16], polar: [0.63, 1.73], azimuth: null },
 }
 export const INTRO_FROM = v(15.9, 6.8, -11.4)

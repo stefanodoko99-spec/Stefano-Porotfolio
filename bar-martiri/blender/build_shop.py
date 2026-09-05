@@ -161,6 +161,10 @@ M = {k: mat(k, *v) for k, v in {
     'grey':        ('#9aa0b8', 0.7),
     'panelBlue':   ('#1b3ab0', 0.25, 0.2),
     'panelFrame':  ('#b9c3e6', 0.4, 0.5),
+    # a modern monocrystalline cell: near-black, glassier than the older
+    # flat-blue panel colour — distinct from panelBlue so the battery
+    # stripe (which reuses panelBlue) is not pulled along with this change
+    'solarCell':   ('#0c142e', 0.12, 0.4),
     'green':       ('#3f9a3f', 0.7),
     'greenDark':   ('#2b6b2b', 0.7),
     'yellow':      ('#f2c230', 0.5),
@@ -169,6 +173,16 @@ M = {k: mat(k, *v) for k, v in {
     'hitbox':      ('#ff0000', 1.0),
     'text':        ('#f4f2ff', 0.6),
     'ink':         ('#0a0812', 0.7),
+    'amber':       ('#c17a2e', 0.25),
+    'vodkaClear':  ('#dce8ea', 0.15),
+    'wineDark':    ('#3d0f1e', 0.3),
+    'ginBottle':   ('#2f6b4f', 0.3),
+    'foil':        ('#c9a13a', 0.35, 0.7),
+    'jblBody':     ('#232228', 0.55),
+    'jblMesh':     ('#17161b', 0.7),
+    'starlinkWhite': ('#f2f3f5', 0.4),
+    'genBody':     ('#5a5f4a', 0.6),
+    'battBody':    ('#1c1e24', 0.35),
 }.items()}
 M['wood'] = mat_wood('wood', ('#c9a86a', '#e6cd93'))
 M['woodDark'] = mat_wood('woodDark', ('#8a6a3c', '#b08f55'))
@@ -366,12 +380,24 @@ for i, zc in enumerate((-2.3, 0.4)):
 cy('cup', 0.07, 0.17, -3.2, -1.57, -0.9, 'SHOP', M['white'], seg=12)
 cy('bottleSake', 0.065, 0.36, -2.75, -1.48, -1.4, 'SHOP', M['green'], seg=12)
 cy('bottleSakeNeck', 0.03, 0.12, -2.75, -1.26, -1.4, 'SHOP', M['green'], seg=10)
-# stools
-for i, zc in enumerate((-2.25, -0.35)):
-    bx(f'stoolSeat{i}', 0.5, 0.08, 0.5, -3.65, F + 0.62, zc, 'SHOP', M['wood'])
-    for dx, dz in ((-0.2, -0.2), (0.2, -0.2), (-0.2, 0.2), (0.2, 0.2)):
-        cy(f'stoolLeg{i}_{dx:+.0f}{dz:+.0f}', 0.035, 0.6, -3.65 + dx, F + 0.3, zc + dz, 'SHOP', M['orange'], seg=8)
-    bx(f'stoolRail{i}', 0.42, 0.03, 0.03, -3.65, F + 0.22, zc + 0.2, 'SHOP', M['orange'], bevel=False)
+# real spirits, standing on the counter rather than cycling the same seven colours on the back shelf
+CTR_TOP = -1.66
+for name, col, cap, zc in (('whiskey', 'amber', 'metalDark', -1.9), ('vodka', 'vodkaClear', 'grey', -2.2),
+                           ('wine', 'wineDark', 'foil', -2.5), ('gin', 'ginBottle', 'white', -2.8)):
+    cy(f'{name}Bottle', 0.07, 0.32, -2.95, CTR_TOP + 0.16, zc, 'SHOP', M[col], seg=12)
+    cy(f'{name}Neck', 0.028, 0.14, -2.95, CTR_TOP + 0.39, zc, 'SHOP', M[col], seg=10)
+    cy(f'{name}Cap', 0.03, 0.05, -2.95, CTR_TOP + 0.485, zc, 'SHOP', M[cap], seg=10)
+# bar stools: proper bar-height (seat well above a dining chair's), each its own bright colour
+# rather than three identical wood-and-orange copies
+STOOL_COLS = [mat('stoolRed', '#ff3b5c', rough=0.4), mat('stoolYellow', '#ffd23a', rough=0.4),
+              mat('stoolTeal', '#28e7ff', rough=0.4)]
+for i, zc in enumerate((-2.25, -1.0, 0.25)):
+    seat_h = F + 0.78
+    bx(f'stoolSeat{i}', 0.46, 0.07, 0.46, -3.65, seat_h, zc, 'SHOP', STOOL_COLS[i % len(STOOL_COLS)])
+    for dx, dz in ((-0.18, -0.18), (0.18, -0.18), (-0.18, 0.18), (0.18, 0.18)):
+        cy(f'stoolLeg{i}_{dx:+.0f}{dz:+.0f}', 0.03, seat_h - F - 0.08, -3.65 + dx, F + (seat_h - F - 0.08) / 2, zc + dz, 'SHOP', M['metalDark'], seg=8)
+    bx(f'stoolRail{i}', 0.38, 0.025, 0.025, -3.65, F + 0.32, zc + 0.18, 'SHOP', M['metalDark'], bevel=False)
+    cy(f'stoolPost{i}', 0.032, 0.1, -3.65, seat_h - 0.09, zc, 'SHOP', STOOL_COLS[i % len(STOOL_COLS)], seg=10)
 # posts and the awning
 A_TOP, A_OUT, A_Y0, A_Y1 = CX0, -4.05, 0.32, -0.18
 for zc in (BZ0 + 0.1, BZ1 - 0.1):
@@ -412,23 +438,6 @@ screen('littleTvScreen', 1.0, 0.48, -1.87, 2.3, -2.4, '-x')
 glow(text('neonOpen', LABELS['open'], face_for(LABELS['open']), 0.26, -2.34, 2.95, 0.55, 'EMISSIVE', EM['green'], facing='-x', tube=0.012), 'green')
 bx('neonOpenBoard', 0.06, 0.5, 1.0, -2.25, 2.95, 0.55, 'MACHINES', M['black'])
 bx('neonOpenPost', 0.08, 2.4, 0.08, -2.2, R + 1.3, 0.55, 'MACHINES', M['metalDark'])
-# chalkboard easel at the +z end of the counter
-EX, EZ = -3.05, 2.45
-# The rotation tilts each leg about its OWN centre, not about the point where
-# it actually meets the ground or the board — so the sign of the angle is
-# what decides which end ends up wider. The signs here had it backwards: legs
-# that pinched to a point at the floor and splayed apart at the top, which is
-# a table balanced on its own scissors rather than a stable A-frame. Rendered
-# side-on to confirm before and after; flipping the sign is the whole fix.
-for s, (dx, dz) in enumerate(((-0.12, 0), (0.12, 0))):
-    for k, zz in enumerate((-0.3, 0.3)):
-        cy(f'easelLeg{s}{k}', 0.025, 1.25, EX + dx * (1.4 if s else 1.0), F + 0.62, EZ + zz, 'SHOP', M['woodDark'], seg=8,
-           rot=(0, (-0.22 if s else 0.22), 0))
-bx('easelBoard', 0.06, 0.9, 0.7, EX - 0.05, F + 0.78, EZ, 'SHOP', M['black'], rot=(0, -0.22, 0))
-bx('easelFrame', 0.04, 1.0, 0.8, EX - 0.02, F + 0.78, EZ, 'SHOP', M['woodDark'], rot=(0, -0.22, 0))
-for k in range(4):
-    bx(f'chalk{k}', 0.02, 0.03, 0.35 - k * 0.05, EX - 0.1 + k * 0.03, F + 0.55 + k * 0.14, EZ + 0.1, 'SHOP', M['white'], bevel=False, rot=(0, -0.22, 0))
-hit('contact_easel', 0.6, 1.3, 1.0, EX - 0.1, F + 0.65, EZ)
 
 # ---------------------------------------------------------------- the noren face (-z)
 # the curtain: a waved grid hanging from the header
@@ -539,18 +548,32 @@ for i, xc in enumerate((0.77, -0.33, -1.44)):
     hit(f'small{i + 1}', 0.86, 0.74, 0.3, xc, R + 1.62, 1.4)
     screen_edge(f'smallEdge{i + 1}', 0.71, xc, R + 1.16, 1.41)
 bx('smallShelf', 3.3, 0.06, 0.4, -0.33, R + 1.22, 1.2, 'MACHINES', M['metal'])
-# the stack on the mast at the -x corner: a small screen, a tall one, another small one
-bx('smallFrame4', 0.86, 0.74, 0.16, -1.46, R + 2.58, 1.31, 'MACHINES', M['metalDark'])
-screen('smallScreen4', 0.76, 0.64, -1.46, R + 2.58, 1.4, '+z')
-screen_edge('smallEdge4', 0.71, -1.46, R + 2.12, 1.44)
-bx('tallFrame', 0.9, 1.26, 0.16, -1.49, R + 3.8, 1.36, 'MACHINES', M['metalDark'])
-screen('tallScreen', 0.8, 1.16, -1.49, R + 3.8, 1.45, '+z')
-screen_edge('tallEdge', 0.75, -1.49, R + 3.08, 1.49)
-bx('smallFrame5', 0.86, 0.74, 0.16, -1.51, R + 5.05, 1.4, 'MACHINES', M['metalDark'])
-screen('smallScreen5', 0.76, 0.64, -1.51, R + 5.05, 1.49, '+z')
-screen_edge('smallEdge5', 0.71, -1.51, R + 4.59, 1.53)
-cy('mastScreens', 0.06, 6.2, -1.5, R + 3.1, 1.15, 'MACHINES', M['metalDark'], seg=10)
-# the big screen on its stand, the speaker on top
+# two matching masts flanking the interactive row (was one lopsided mast
+# bolted onto the row's left end) — each a "gaming monitor" trio: a wide
+# horizontal panel, a tall vertical (portrait-rotated) panel, and a curved
+# triple-monitor surround on top, mirrored left and right for symmetry
+ROW_CX = -0.33
+for side, sx in ((-1, ROW_CX - 1.95), (1, ROW_CX + 1.95)):
+    tag = 'L' if side < 0 else 'R'
+    bx(f'monHFrame{tag}', 1.0, 0.58, 0.16, sx, R + 2.58, 1.31, 'MACHINES', M['metalDark'])
+    screen(f'monHScreen{tag}', 0.9, 0.48, sx, R + 2.58, 1.4, '+z')
+    screen_edge(f'monHEdge{tag}', 0.85, sx, R + 2.31, 1.44)
+
+    bx(f'monVFrame{tag}', 0.64, 1.32, 0.16, sx, R + 3.85, 1.36, 'MACHINES', M['metalDark'])
+    screen(f'monVScreen{tag}', 0.54, 1.22, sx, R + 3.85, 1.45, '+z')
+    screen_edge(f'monVEdge{tag}', 0.5, sx, R + 3.2, 1.49)
+
+    # curved surround: three panels fanned around a shared focal point, the
+    # way a real triple-monitor curved gaming setup is actually built
+    cx_, cy_, cz_ = sx, R + 5.15, 1.44
+    for i, dx in enumerate((-0.44, 0.0, 0.44)):
+        yaw = (i - 1) * side * math.radians(20)
+        zc = cz_ + (0.0 if i == 1 else -0.05)
+        bx(f'monCFrame{tag}{i}', 0.42, 0.58, 0.14, cx_ + dx, cy_, zc - 0.03, 'MACHINES', M['metalDark'], rot=(0, 0, yaw))
+        bx(f'monCScreen{tag}{i}', 0.36, 0.48, 0.02, cx_ + dx, cy_, zc + 0.06, 'SHOP', M['screenBack'], rot=(0, 0, yaw), bevel=False)
+        screen_edge(f'monCEdge{tag}{i}', 0.32, cx_ + dx + math.sin(yaw) * 0.24, cy_ - 0.27, zc + 0.06 + (1 - math.cos(yaw)) * 0.24)
+    cy(f'mastScreens{tag}', 0.06, 6.4, sx, R + 3.2, 1.15, 'MACHINES', M['metalDark'], seg=10)
+# the big screen on its stand
 BSX, BSY, BSZ = 0.68, 3.8, 0.52
 bx('bigFrame', 3.15, 2.0, 0.18, BSX, BSY, BSZ - 0.1, 'MACHINES', M['metalDark'])
 screen('bigScreen', 2.95, 1.8, BSX, BSY, BSZ, '+z')
@@ -559,15 +582,28 @@ for xc in (BSX - 1.1, BSX + 1.1):
     cy(f'bigPost{xc:.1f}', 0.07, 2.4, xc, R + 1.25, BSZ - 0.2, 'MACHINES', M['metalDark'], seg=10)
 bx('bigBase', 2.8, 0.12, 0.7, BSX, R + 0.13, BSZ - 0.2, 'MACHINES', M['metalDark'])
 glow(bx('portalStrip', 2.9, 0.05, 0.05, BSX, BSY - 1.04, BSZ + 0.04, 'EMISSIVE', EM['cyan'], bevel=False), 'cyan')
-bx('speakerBox', 1.0, 1.3, 0.85, 1.55, BSY + 1.7, -0.15, 'MACHINES', M['tealDark'])
-cy('speakerCone', 0.32, 0.12, 1.55, BSY + 1.95, 0.3, 'MACHINES', M['black'], seg=20, axis='z', r2=0.18)
-cy('speakerTweeter', 0.13, 0.1, 1.55, BSY + 1.42, 0.3, 'MACHINES', M['black'], seg=16, axis='z', r2=0.07)
-cy('speakerPost', 0.06, 0.6, 1.55, BSY + 1.0, -0.15, 'MACHINES', M['metalDark'], seg=8)
-# satellite dish
-cy('dish', 0.6, 0.22, 1.7, R + 1.75, 1.3, 'MACHINES', M['grey'], seg=24, r2=0.04, rot=(1.1, 0, 0.3))
-cy('dishFeed', 0.04, 0.5, 1.7, R + 1.95, 1.55, 'MACHINES', M['metalDark'], seg=8, rot=(1.1, 0, 0.3))
-cy('dishArm', 0.03, 0.55, 1.7, R + 1.55, 1.15, 'MACHINES', M['metalDark'], seg=8, rot=(0.6, 0, 0))
-cy('dishPost', 0.05, 1.1, 1.7, R + 0.7, 0.9, 'MACHINES', M['metalDark'], seg=8)
+# the speaker, moved off the terrace roof and down to the floor: a JBL-style
+# portable — a horizontal capsule in a rubber body, a mesh grille wrap, a
+# strap loop, standing beside the screen's own base rather than perched above
+# it where the roof crop nobody was ever going to look at it
+SPX, SPY, SPZ = BSX + 1.55, F + 0.28, BSZ - 0.55
+cy('jblBody', 0.28, 0.85, SPX, SPY, SPZ, 'MACHINES', M['jblBody'], seg=22, rot=(math.pi / 2, 0, 0))
+cy('jblMeshWrap', 0.285, 0.6, SPX, SPY, SPZ, 'MACHINES', M['jblMesh'], seg=22, rot=(math.pi / 2, 0, 0))
+for capz in (SPZ - 0.42, SPZ + 0.42):
+    cy(f'jblCap{capz:.2f}', 0.28, 0.05, SPX, SPY, capz, 'MACHINES', M['jblBody'], seg=22, rot=(math.pi / 2, 0, 0))
+glow(cy('jblLed', 0.02, 0.03, SPX, SPY + 0.2, SPZ, 'EMISSIVE', EM['ledCyan'], seg=10, rot=(math.pi / 2, 0, 0)), 'ledCyan')
+bx('jblStrap', 0.04, 0.32, 0.05, SPX, SPY + 0.32, SPZ, 'MACHINES', M['black'], bevel=False)
+hit('jbl', 0.7, 1.0, 1.0, SPX, SPY + 0.3, SPZ)
+# a Starlink-style dish: the real thing is a flat phased-array panel on a
+# tilted tripod mount, not a parabolic dish — the round satellite-TV dish
+# this used to be was the wrong hardware for the silhouette being asked for
+DSX, DSY, DSZ = 1.7, R + 1.5, 1.3
+bx('dishPanel', 0.62, 0.5, 0.04, DSX, DSY, DSZ, 'MACHINES', M['starlinkWhite'], rot=(math.radians(35), 0, math.radians(15)))
+bx('dishPanelTrim', 0.66, 0.54, 0.02, DSX, DSY, DSZ - 0.02, 'MACHINES', M['metalDark'], rot=(math.radians(35), 0, math.radians(15)))
+for i in range(3):
+    cy(f'dishLeg{i}', 0.02, 0.55, DSX + (i - 1) * 0.18, R + 0.55 + i * 0.02, 0.85 + (i - 1) * 0.08, 'MACHINES', M['metalDark'], seg=8,
+       rot=(math.radians(12 * (i - 1)), 0, 0))
+bx('dishHub', 0.12, 0.1, 0.12, DSX, R + 0.95, 0.95, 'MACHINES', M['metalDark'])
 
 # ---------------------------------------------------------------- the utility wall (+x): bricks, pipes, boxes
 UX = BX1 + 0.02
@@ -588,20 +624,49 @@ bx('acUnit', 0.45, 0.6, 0.7, UX + 0.22, F + 1.1, -2.6, 'SHOP', M['grey'])
 cy('acFan', 0.24, 0.05, UX + 0.46, F + 1.1, -2.6, 'SHOP', M['metalDark'], seg=18, axis='x')
 tube('cableUtil', catenary((UX + 0.1, F + 2.9, -3.8), (UX + 0.1, F + 2.2, 1.8), 0.6, 12), 0.02, 'SHOP', M['black'])
 
+# a generator, floor-standing at the far end of the utility wall (the back
+# of the building, past the AC unit), with a battery pack beside it and a
+# cable running along the wall to the electrical panel — "connected to the
+# bar" the same way the existing utility cable already reaches it
+GNX, GNZ = UX + 0.38, -3.75
+bx('generatorBody', 0.85, 0.95, 0.62, GNX, F + 0.48, GNZ, 'SHOP', M['genBody'])
+bx('generatorSkid', 0.92, 0.08, 0.68, GNX, F + 0.04, GNZ, 'SHOP', M['metalDark'])
+for i in range(5):
+    bx(f'generatorFin{i}', 0.02, 0.5, 0.5, GNX - 0.42, F + 0.66, GNZ - 0.24 + i * 0.12, 'SHOP', M['metalDark'], bevel=False)
+bx('generatorPanel', 0.05, 0.22, 0.3, GNX + 0.43, F + 0.85, GNZ, 'SHOP', M['black'])
+glow(cy('generatorLed', 0.015, 0.02, GNX + 0.46, F + 0.94, GNZ - 0.08, 'EMISSIVE', EM['green'], seg=8, axis='x'), 'green')
+glow(cy('generatorLed2', 0.015, 0.02, GNX + 0.46, F + 0.94, GNZ + 0.08, 'EMISSIVE', EM['red'], seg=8, axis='x'), 'red')
+cy('generatorMuffler', 0.06, 0.3, GNX - 0.1, F + 1.05, GNZ - 0.31, 'SHOP', M['metalDark'], seg=12, axis='z')
+bx('generatorHandle', 0.5, 0.03, 0.03, GNX, F + 0.98, GNZ + 0.32, 'SHOP', M['black'], bevel=False)
+
+BTX, BTZ = GNX, GNZ + 0.95
+bx('battPackBody', 0.6, 1.15, 0.55, BTX, F + 0.58, BTZ, 'SHOP', M['battBody'])
+bx('battStripe', 0.61, 0.1, 0.56, BTX, F + 1.02, BTZ, 'SHOP', M['panelBlue'], bevel=False)
+bx('battVent', 0.02, 0.7, 0.42, BTX - 0.31, F + 0.58, BTZ, 'SHOP', M['metalDark'], bevel=False)
+glow(text('battLabel', 'ESS', 'sign', 0.06, BTX + 0.31, F + 0.75, BTZ - 0.15, 'EMISSIVE', EM['white'], facing='+x', tube=0.006), 'white')
+glow(cy('battLed', 0.014, 0.02, BTX + 0.31, F + 0.95, BTZ, 'EMISSIVE', EM['cyan'], seg=8, axis='x'), 'cyan')
+
+tube('cableGenerator', catenary((GNX + 0.2, F + 0.95, GNZ), (UX + 0.1, F + 1.3, -0.9), 0.35, 10), 0.018, 'SHOP', M['black'])
+
 # ---------------------------------------------------------------- the roof: solar panels, hologram pedestal, lanterns, masts, tank
 def solar(name, x, y, z, yaw, pitch):
     r = (pitch, 0, yaw)
-    bx(name + 'Panel', 1.7, 0.06, 1.15, x, y, z, 'SHOP', M['panelBlue'], rot=r)
+    bx(name + 'Panel', 1.7, 0.06, 1.15, x, y, z, 'SHOP', M['solarCell'], rot=r)
     bx(name + 'Frame', 1.76, 0.04, 1.21, x, y - 0.03, z, 'SHOP', M['panelFrame'], rot=r)
-    # the grid: bars the frame colour laid on the panel
-    for i in range(1, 3):
-        bx(name + f'GridZ{i}', 1.7, 0.02, 0.03, x, y + 0.035, z - 0.575 + i * 1.15 / 3, 'SHOP', M['panelFrame'], bevel=False, rot=r)
-    for i in range(1, 4):
-        bx(name + f'GridX{i}', 0.03, 0.02, 1.15, x - 0.85 + i * 1.7 / 4, y + 0.035, z, 'SHOP', M['panelFrame'], bevel=False, rot=r)
+    # a dense lattice of thin bus-bars reads as real monocrystalline cells;
+    # the old 3x4 grid of thick bars was too coarse to read as anything but
+    # a handful of stripes painted on a slab
+    for i in range(1, 9):
+        bx(name + f'GridZ{i}', 1.68, 0.018, 0.012, x, y + 0.032, z - 0.575 + i * 1.15 / 9, 'SHOP', M['panelFrame'], bevel=False, rot=r)
+    for i in range(1, 6):
+        bx(name + f'GridX{i}', 0.012, 0.018, 1.13, x - 0.85 + i * 1.7 / 6, y + 0.032, z, 'SHOP', M['panelFrame'], bevel=False, rot=r)
     cy(name + 'Post', 0.06, y - R, x, (y + R) / 2, z, 'SHOP', M['metal'], seg=10)
     bx(name + 'Foot', 0.4, 0.1, 0.4, x, R + 0.18, z, 'SHOP', M['metalDark'])
-solar('solarA', 1.35, R + 1.8, -2.7, -0.2, 0.42)
-solar('solarB', -0.35, R + 2.1, -3.15, 0.1, 0.42)
+# were centred only 1.7 apart on x and 0.45 on z for panels 1.7 wide each —
+# they overlapped through one another. Respaced along the same roof ridge
+# with real clearance between the two frames.
+solar('solarA', 1.65, R + 1.75, -2.55, -0.15, 0.4)
+solar('solarB', -0.55, R + 2.05, -3.35, 0.15, 0.4)
 # hologram pedestal: a drum with a cyan ring on top; the runtime grows the bowl of points over it
 HX, HZ = -0.1, -0.95
 cy('holoDrum', 0.48, 1.3, HX, R + 0.75, HZ, 'MACHINES', M['metalDark'], seg=24)
@@ -648,28 +713,27 @@ bx('neonConePost', 0.08, 1.7, 0.08, NBX + 0.15, R + 0.95, NBZ, 'MACHINES', M['me
 tube('pipeRoof', [(-2.4, R + 0.25, -2.0), (0.6, R + 0.25, -2.0), (0.6, R + 0.25, -0.2), (1.9, R + 0.25, -0.2)], 0.05, 'SHOP', M['pipe'])
 
 
-# ---------------------------------------------------------------- the beach: a parasol, a sunbed and a ball by the curtain face
+# ---------------------------------------------------------------- the beach: a ball by the curtain face
+# The parasol (and, earlier, the sunbed it shaded) are both gone on request —
+# there is no shade structure left here at all now, just the ball.
 PBX, PBZ = 0.9, -5.9
-cy('parasolPole', 0.035, 2.7, PBX + 1.0, F + 1.35, PBZ - 0.4, 'SHOP', M['white'], seg=8, rot=(0.12, 0, 0))
-cy('parasol', 1.15, 0.42, PBX + 1.0, F + 2.62, PBZ - 0.7, 'SHOP', M['wallBlue'], seg=12, r2=0.0, smooth=False)
-cy('parasolTop', 0.06, 0.12, PBX + 1.0, F + 2.88, PBZ - 0.72, 'SHOP', M['white'], seg=8, r2=0.0)
-bx('sunbedFrame', 0.72, 0.06, 1.8, PBX, F + 0.32, PBZ, 'SHOP', M['woodDark'])
-for k in range(7):
-    bx(f'sunbedSlat{k}', 0.66, 0.03, 0.18, PBX, F + 0.37, PBZ - 0.75 + k * 0.25, 'SHOP', M['wood'], bevel=False)
-# The board was rotated about its own centre, which is not where a reclining
-# backrest actually pivots — the centre of a tilted board and the edge where
-# it meets the bed are two different points, and only the second one should
-# stay put. Positioned by its own centre, the whole board floated well above
-# and beyond the bed with a visible gap of air under it. Measured from the
-# built scene: the board's lowest corner needed to move (0, -0.56, +0.02) in
-# Blender space to land on the slats' rear edge, which in these three.js
-# coordinates is z -0.56 closer and y +0.02 higher — the position below is
-# the old one plus that correction, not a re-guess.
-bx('sunbedBack', 0.66, 0.05, 0.62, PBX, F + 0.6434, PBZ - 0.4869, 'SHOP', M['wood'], rot=(-0.9, 0, 0))
-bx('sunbedTowel', 0.5, 0.03, 1.1, PBX, F + 0.4, PBZ + 0.25, 'SHOP', M['fabric'], bevel=False)
-for dx, dz in ((-0.3, -0.75), (0.3, -0.75), (-0.3, 0.75), (0.3, 0.75)):
-    cy(f'sunbedLeg{dx:+.0f}{dz:+.0f}', 0.025, 0.3, PBX + dx, F + 0.15, PBZ + dz, 'SHOP', M['woodDark'], seg=6)
 sph('beachBall', 0.22, PBX + 1.55, F + 0.22, PBZ + 0.9, 'SHOP', M['orange'], seg=16)
+
+# the ice cream machine, standing where the sunbed used to be
+ICX, ICZ = PBX, PBZ
+bx('iceCreamBody', 0.55, 0.95, 0.5, ICX, F + 0.48, ICZ, 'SHOP', M['white'])
+bx('iceCreamPanel', 0.1, 0.5, 0.42, ICX - 0.25, F + 0.68, ICZ, 'SHOP', M['red'])
+bx('iceCreamWindow', 0.06, 0.28, 0.3, ICX - 0.3, F + 0.85, ICZ, 'SHOP', M['vodkaClear'])
+cy('iceCreamSwirlA', 0.09, 0.22, ICX - 0.34, F + 0.68, ICZ, 'SHOP', M['cream'], seg=14)
+cy('iceCreamLever', 0.02, 0.18, ICX - 0.32, F + 0.55, ICZ + 0.18, 'SHOP', M['metalDark'], seg=8, rot=(0, 0, math.radians(30)))
+bx('iceCreamTray', 0.5, 0.04, 0.45, ICX, F + 0.18, ICZ, 'SHOP', M['metal'])
+glow(text('iceCreamSign', 'GELATO', 'sign', 0.1, ICX - 0.36, F + 1.0, ICZ - 0.1, 'EMISSIVE', EM['pink'], facing='-x', tube=0.008), 'pink')
+
+# an LED path: a low, concentrated line of ground lights leading in from the
+# open pavement to the counter — a modern strip rather than a string of bulbs
+for i in range(9):
+    px = PBX - 2.2 + i * 0.55
+    glow(bx(f'pathLed{i}', 0.1, 0.02, 0.1, px, F + 0.02, PBZ + 2.4, 'EMISSIVE', EM['ledCyan'], bevel=False), 'ledCyan')
 
 # ---------------------------------------------------------------- the signpost
 PX, PZ = -4.05, -5.05
@@ -779,7 +843,15 @@ def camera(name, pos, lens=22):
 tgt = bpy.data.objects.new('target', None); scene.collection.objects.link(tgt)
 CAMS = {'ref': ((-11.1, -1.0, -7.6), (0, 0, -1)), 'back': ((2.0, 2.0, 11.0), (0, 0, -1)), 'top': ((-6, 11, -6), (0, 0, -1)),
         'counter': ((-5.0, 0.2, -7.0), (-1, -1, -1)), 'signs': ((-7.2, -0.6, -5.6), (-4.1, -0.9, -5.0)), 'vend': ((1.15, -1.05, 5.4), (1.15, -1.05, 3.0)),
-        'arcade': ((-0.58, -1.12, 4.5), (-0.58, -1.18, 2.85))}
+        'arcade': ((-0.58, -1.12, 4.5), (-0.58, -1.18, 2.85)),
+        'utility': ((UX + 4.2, 1.8, -2.0), (UX, 0.2, -2.8)),
+        'icecream': ((4.2, 1.4, -6.3), (PBX, F + 0.6, PBZ)),
+        'screens': ((0.5, 3.2, 9.0), (ROW_CX, R + 3.6, 1.4)),
+        'acfan': ((UX + 1.6, F + 1.1, -2.6), (UX + 0.46, F + 1.1, -2.6)),
+        'icecream2': ((PBX - 2.3, F + 1.0, PBZ + 0.6), (PBX - 0.25, F + 0.65, PBZ)),
+        'dish': ((DSX + 2.2, R + 1.9, 1.8), (DSX, R + 1.5, 1.3)),
+        'solarclose': ((0.55, R + 2.6, -2.5), (0.55, R + 2.0, -2.9)),
+        'terrace2': ((5.0, F + 1.5, -5.5), (PBX, F + 0.5, PBZ))}
 for name, (pos, look) in CAMS.items():
     c = camera('Camera_' + name, pos)
     con = c.constraints.new('TRACK_TO'); con.target = tgt; con.track_axis = 'TRACK_NEGATIVE_Z'; con.up_axis = 'UP_Y'

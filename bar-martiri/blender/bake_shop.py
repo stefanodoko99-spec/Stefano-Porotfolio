@@ -15,7 +15,7 @@
 import bpy, os, sys, json, math, time
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-SAMPLES = int(argv[0]) if len(argv) > 0 else 128
+SAMPLES = int(argv[0]) if len(argv) > 0 else 512
 ONLY = argv[1].split(',') if len(argv) > 1 else None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -27,16 +27,19 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 # (collection, joined mesh name, atlas name, atlas size, keep the UV it has, save as PNG)
 #
-# SIGNPOST doubled from 1024 to 2048: it carries the smallest, thinnest detail
-# in the scene — the arrow signs' lettering and the neon tubing on the sign
-# frames — seen close up when a visitor reads it, so it was the first place
-# a texel became a visible block. Every group is PNG now; nothing bakes to
-# JPEG any more, so the `png` column is the same for all four, but it stays a
-# column rather than a constant because a future group with no fine colour
-# detail (a flat backdrop, say) is a legitimate reason to trade back to JPEG.
-GROUPS = [('SHOP', 'shopJoined', 'shopBaked', 2048, False, True),
-          ('MACHINES', 'machinesJoined', 'machinesBaked', 2048, False, True),
-          ('SIGNPOST', 'signpostJoined', 'signpostBaked', 2048, False, True),
+# SHOP, MACHINES and SIGNPOST doubled again, from 2048 to 4096: close-up
+# detail (the bottles, the stools, signage lettering, neon tubing) is what
+# visitors actually stop and look at, and 2048 was still the first place a
+# texel became a visible block on those. FLOOR stays at 2048 — it is seen at
+# a shallow, distant grazing angle for the whole visit and never gets a
+# close-up look the other three groups do, so the extra memory has nothing to
+# buy there. Every group is PNG now; nothing bakes to JPEG any more, so the
+# `png` column is the same for all four, but it stays a column rather than a
+# constant because a future group with no fine colour detail (a flat
+# backdrop, say) is a legitimate reason to trade back to JPEG.
+GROUPS = [('SHOP', 'shopJoined', 'shopBaked', 4096, False, True),
+          ('MACHINES', 'machinesJoined', 'machinesBaked', 4096, False, True),
+          ('SIGNPOST', 'signpostJoined', 'signpostBaked', 4096, False, True),
           ('FLOOR', 'floor', 'floorBaked', 2048, True, True)]
 LIVE = ['TEXT', 'EMISSIVE', 'SCREENS', 'HITBOX', 'DYNAMIC', 'MARKER']
 
@@ -48,12 +51,16 @@ scene.render.engine = 'CYCLES'
 scene.cycles.device = 'CPU'
 scene.cycles.samples = SAMPLES
 scene.cycles.use_adaptive_sampling = True
-# Tighter than before: PNG keeps whatever grain Cycles leaves in the bake
-# exactly as rendered, where JPEG's own blur used to hide it for free. Asking
-# adaptive sampling to work harder here is what pays for going lossless.
-scene.cycles.adaptive_threshold = 0.006
+# Tighter again (0.006 -> 0.005) alongside the samples bump (128 -> 512):
+# PNG keeps whatever grain Cycles leaves in the bake exactly as rendered,
+# where JPEG's own blur used to hide it for free, so a lower noise floor is
+# what actually pays for going lossless rather than the sample count alone.
+scene.cycles.adaptive_threshold = 0.005
 scene.cycles.use_denoising = True
 scene.cycles.denoiser = 'OPENIMAGEDENOISE'
+# use_denoising only runs on a bake when the bake writes the COMBINED pass —
+# every other bake pass type skips it silently. Asserted again right at the
+# bake call below, where it actually matters, rather than trusted here.
 scene.cycles.max_bounces = 8
 scene.cycles.diffuse_bounces = 4
 scene.cycles.glossy_bounces = 3
@@ -77,6 +84,19 @@ b.use_pass_transmission = False
 # is more than a few metres from the camera, which is what actually explains
 # a scene that reads vivid close up in Blender and flat, dark, and washed out
 # from the site's own default distance. Bumped hard, not tuned to the gutter.
+# (The far side of that same problem — everything outside this margin, where
+# the packer left no island at all — is handled separately, after export, by
+# a nearest-colour fill over the exported PNG; the two do not overlap.)
+#
+# A generic bake starting point is 16px, and that is the right number for a
+# seam ring alone. It is the wrong number for THIS pipeline: mipmapping halves
+# resolution repeatedly regardless of the atlas's base size, so how many mip
+# levels a margin survives before a seam reappears is set by its absolute
+# pixel count, not its share of the texture. Doubling the atlas to 4096 and
+# also shrinking the margin to 16px would make seams reappear at a HIGHER mip
+# level than the 2048/48px combination this project already measured and
+# fixed — a regression dressed up as following the spec's default. 48px
+# carries forward unchanged so that mip-level behaviour does not move either.
 b.margin = 48
 b.margin_type = 'EXTEND'
 b.use_selected_to_active = False
@@ -139,7 +159,19 @@ def attach_bake_image(ob, image):
         nt.nodes.active = node
 
 def bake_group(ob, tex_name, size, png):
-    image = bpy.data.images.get(tex_name) or bpy.data.images.new(tex_name, size, size, alpha=False, float_buffer=False)
+    # Never reuse a found image datablock as-is: a rerun of this script over an
+    # older .blend still holding a 2048 "shopBaked" from a previous pass would
+    # otherwise hand that datablock straight to the bake operator, and its
+    # canvas would stay 2048 while everything else here moved to 4096 — the
+    # exact "resize an old bake and call it a 4K rebake" shortcut the spec
+    # rules out, except silent. Dropping any existing image and always
+    # creating a fresh one at the requested size makes that impossible: the
+    # canvas below is guaranteed new, and use_clear=True (set above) then has
+    # the bake operator overwrite every pixel of it before anything is saved.
+    old = bpy.data.images.get(tex_name)
+    if old is not None:
+        bpy.data.images.remove(old)
+    image = bpy.data.images.new(tex_name, size, size, alpha=False, float_buffer=False)
     # A baked image holds scene-linear values — the bake operator writes the lit
     # result directly, the same numbers any render pass works with, before any
     # display transform. It has to be LABELLED that way too, or save_render
@@ -151,6 +183,14 @@ def bake_group(ob, tex_name, size, png):
     attach_bake_image(ob, image)
     select_only([ob], ob)
     t0 = time.time()
+    # use_denoising only takes effect on a COMBINED bake — confirmed against
+    # Blender's own tracker, since the render-time flag silently doing nothing
+    # for other bake pass types is exactly the kind of failure that would not
+    # show up as an error, only as extra noise in the delivered atlas. This
+    # script only ever bakes COMBINED, so the assert is cheap and permanent
+    # insurance against a future edit changing that without noticing.
+    assert scene.cycles.bake_type == 'COMBINED' and scene.cycles.use_denoising, \
+        'denoising silently does not apply outside a COMBINED bake'
     bpy.ops.object.bake(type='COMBINED')
 
     def save(path):
@@ -166,12 +206,18 @@ def bake_group(ob, tex_name, size, png):
         image.save_render(path, scene=scene)
 
     ext = 'png' if png else 'jpg'
-    path = os.path.join(TEX_DIR, f'{tex_name}.{ext}')
-    save(path)
+    # The clean full-resolution master, at whatever size this group bakes at
+    # (4096 for shop/machines/signpost, 2048 for the floor) — this file is
+    # never itself downscaled or re-derived from anything smaller.
+    master_path = os.path.join(TEX_DIR, f'{tex_name}.{ext}')
+    save(master_path)
+    # A second, smaller pass generated from the master, purely for the
+    # runtime's own narrow/`compact`-viewport path (see main.ts's atlasPath) —
+    # a deliberate extra output, not a byproduct of the master save above.
     image.scale(size // 2, size // 2)
     save(os.path.join(TEX_DIR, f'{tex_name}-half.{ext}'))
     image.scale(size, size)
-    log(f'{tex_name}: baked {size}px in {time.time() - t0:.0f}s -> {path}')
+    log(f'{tex_name}: baked {size}px in {time.time() - t0:.0f}s -> {master_path}')
     return f'{tex_name}.{ext}'
 
 with open(os.path.join(HERE, 'glow.json'), encoding='utf-8') as f:

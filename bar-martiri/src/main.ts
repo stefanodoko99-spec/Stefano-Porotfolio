@@ -172,6 +172,8 @@ async function main() {
   const lift = new Color(BAKE_LIFT, BAKE_LIFT, BAKE_LIFT)
   let holoAt = new Vector3(-0.1, 2.05, -0.95)
   let floorBaked: Texture | null = null
+  let beaconMaterial: MeshBasicMaterial | null = null
+  let beaconBase: Color | null = null
 
   shop.traverse((object) => {
     if (!(object instanceof Mesh)) return
@@ -194,6 +196,13 @@ async function main() {
       object.material = material
       if (palette[glowKey].bloom !== false) object.layers.enable(BLOOM_LAYER)
       if (name.startsWith('plate_')) plates.set(name.slice(6), { material, base })
+      // the beacon on top of the information board — the sign mast with the
+      // section plates — pulses instead of holding a flat glow, the way a
+      // beacon reads as alive rather than just lit
+      if (name === 'poleTip') {
+        beaconMaterial = material
+        beaconBase = base
+      }
       return
     }
     if (EMISSIVE.has(name)) console.warn(`ramen: emissive mesh "${name}" has no glow colour in the manifest; painted grey`)
@@ -349,6 +358,7 @@ async function main() {
     const dt = Math.min(clock.getDelta(), 0.25)
     time += dt
     for (const [i, fan] of fans.entries()) fan.rotateZ(dt * (i ? -7 : 9))
+    if (beaconMaterial && beaconBase) beaconMaterial.color.copy(beaconBase).multiplyScalar(0.55 + 0.45 * Math.sin(time * 2.4))
     hologram.update(time)
     screens.update(time)
     interaction.update(dt)
