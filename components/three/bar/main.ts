@@ -191,6 +191,11 @@ export async function startShop(): Promise<() => void> {
   let floorBaked: Texture | null = null
   let beaconMaterial: MeshBasicMaterial | null = null
   let beaconBase: Color | null = null
+  const pathLeds: { material: MeshBasicMaterial; base: Color }[] = []
+  let genGreenMaterial: MeshBasicMaterial | null = null
+  let genGreenBase: Color | null = null
+  let genRedMaterial: MeshBasicMaterial | null = null
+  let genRedBase: Color | null = null
 
   shop.traverse((object) => {
     if (!(object instanceof Mesh)) return
@@ -219,6 +224,19 @@ export async function startShop(): Promise<() => void> {
       if (name === 'poleTip') {
         beaconMaterial = material
         beaconBase = base
+      }
+      // the LED path: each ground light keeps its own material so a chase
+      // can travel the strip, rather than all nine lighting in lockstep
+      const pathLedMatch = /^pathLed(\d+)$/.exec(name)
+      if (pathLedMatch) pathLeds[Number(pathLedMatch[1])] = { material, base }
+      // the generator: a running light should never actually hold still
+      if (name === 'generatorLed') {
+        genGreenMaterial = material
+        genGreenBase = base
+      }
+      if (name === 'generatorLed2') {
+        genRedMaterial = material
+        genRedBase = base
       }
       return
     }
@@ -380,6 +398,28 @@ export async function startShop(): Promise<() => void> {
     time += dt
     for (const [i, fan] of fans.entries()) fan.rotateZ(dt * (i ? -7 : 9))
     if (beaconMaterial && beaconBase) beaconMaterial.color.copy(beaconBase).multiplyScalar(0.55 + 0.45 * Math.sin(time * 2.4))
+    // a bright pulse travels along the path and wraps rather than the whole
+    // strip lighting in lockstep — a floor at 0.15 keeps the rest of the
+    // strip dimly visible instead of going fully dark between passes
+    const pathLedCount = pathLeds.length
+    for (let i = 0; i < pathLedCount; i++) {
+      const led = pathLeds[i]
+      if (!led) continue
+      const pos = (time * 2.2) % pathLedCount
+      const d = Math.min(Math.abs(pos - i), pathLedCount - Math.abs(pos - i))
+      led.material.color.copy(led.base).multiplyScalar(0.15 + 0.85 * Math.max(0, 1 - d / 1.4))
+    }
+    // the generator: a shallow fast flicker on the running light (an
+    // alternator's own ripple), a bright blip that decays on the status
+    // light every couple of seconds rather than a flat, motionless glow
+    if (genGreenMaterial && genGreenBase) {
+      genGreenMaterial.color.copy(genGreenBase).multiplyScalar(0.7 + 0.2 * Math.sin(time * 14) + 0.1 * Math.sin(time * 31 + 1))
+    }
+    if (genRedMaterial && genRedBase) {
+      const cyclePos = time % 2.2
+      const redK = cyclePos < 0.25 ? 0.08 + 0.92 * Math.exp(-cyclePos * 18) : 0.08
+      genRedMaterial.color.copy(genRedBase).multiplyScalar(redK)
+    }
     hologram.update(time)
     screens.update(time)
     interaction.update(dt)
