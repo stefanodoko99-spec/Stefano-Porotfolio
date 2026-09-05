@@ -32,7 +32,19 @@ export type View = {
 
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z)
 export const VIEWS: Record<Mode, View> = {
-  default: { position: v(-11.1, -1, -7.6), target: v(0, 0, -1), distance: [7, 16], polar: [0.63, 1.73], azimuth: null },
+  default: {
+    position: v(-11.1, -1, -7.6),
+    target: v(0, 0, -1),
+    distance: [7, 16],
+    polar: [0.63, 1.73],
+    azimuth: null,
+    // Upright, the k-scale every other close view uses to stand further back
+    // made this stand further back too — precisely backwards for a screen
+    // this narrow, where the goal is the shop filling it. Same bearing as the
+    // desktop shot, just walked forward along it, the way "about" already
+    // does for its own close-up.
+    portrait: { position: v(-6.43, 1.02, -4.82), target: v(0, 1.6, -1) },
+  },
   projects: { position: v(1.15, -1.05, 5.25), target: v(1.15, -1.05, 3.06), distance: [1.6, 3.2], polar: [1.26, 1.67], azimuth: [-0.31, 0.31] },
   about: {
     position: v(0.68, 3.35, 3.15),
