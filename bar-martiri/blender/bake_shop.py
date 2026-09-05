@@ -69,7 +69,15 @@ b.use_pass_diffuse = True
 b.use_pass_glossy = True
 b.use_pass_emit = True
 b.use_pass_transmission = False
-b.margin = 10
+# Dilation, not just seam padding. At 10px this only just covered the ~6-8px
+# gutter between tightly-packed islands — everywhere else in the atlas (every
+# small prop unwrapped on its own, with the packer's margin around it, and
+# every stretch the packer simply couldn't fill) stayed pure black. That black
+# is real image data: mipmapping averages it into every texel once the object
+# is more than a few metres from the camera, which is what actually explains
+# a scene that reads vivid close up in Blender and flat, dark, and washed out
+# from the site's own default distance. Bumped hard, not tuned to the gutter.
+b.margin = 48
 b.margin_type = 'EXTEND'
 b.use_selected_to_active = False
 b.use_clear = True
@@ -132,19 +140,36 @@ def attach_bake_image(ob, image):
 
 def bake_group(ob, tex_name, size, png):
     image = bpy.data.images.get(tex_name) or bpy.data.images.new(tex_name, size, size, alpha=False, float_buffer=False)
+    # A baked image holds scene-linear values — the bake operator writes the lit
+    # result directly, the same numbers any render pass works with, before any
+    # display transform. It has to be LABELLED that way too, or save_render
+    # below has no idea what it is holding: a new image defaults to 'sRGB',
+    # which would tell the exporter these bytes are already gamma-encoded and
+    # skip the transform meant to be applied to them.
+    image.colorspace_settings.name = 'Linear Rec.709'
     image.generated_color = (0, 0, 0, 1)
     attach_bake_image(ob, image)
     select_only([ob], ob)
     t0 = time.time()
     bpy.ops.object.bake(type='COMBINED')
+
+    def save(path):
+        # image.save() writes the colour-managed bytes as a flat linear-to-sRGB
+        # gamma encode: correct for a photo, and flat and washed out next to
+        # what every preview render in this pipeline actually shows, because
+        # every one of those renders (bpy.ops.render.render) goes through the
+        # scene's own view transform (AgX here) on the way to disk and this did
+        # not. save_render runs the same view transform save uses for a normal
+        # render, so the exported atlas finally matches the Blender viewport
+        # instead of a paler, flatter version of it.
+        scene.render.image_settings.file_format = 'PNG' if png else 'JPEG'
+        image.save_render(path, scene=scene)
+
     ext = 'png' if png else 'jpg'
     path = os.path.join(TEX_DIR, f'{tex_name}.{ext}')
-    image.filepath_raw = path
-    image.file_format = 'PNG' if png else 'JPEG'
-    image.save()
+    save(path)
     image.scale(size // 2, size // 2)
-    image.filepath_raw = os.path.join(TEX_DIR, f'{tex_name}-half.{ext}')
-    image.save()
+    save(os.path.join(TEX_DIR, f'{tex_name}-half.{ext}'))
     image.scale(size, size)
     log(f'{tex_name}: baked {size}px in {time.time() - t0:.0f}s -> {path}')
     return f'{tex_name}.{ext}'
