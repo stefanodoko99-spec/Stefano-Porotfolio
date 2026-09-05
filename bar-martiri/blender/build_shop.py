@@ -258,13 +258,15 @@ def prism(name, pts, t, x, coll, material):
     bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
     return _finish(name, bm, coll, material, smooth=False)
 
-def screen(name, w, h, x, y, z, facing, coll='SCREENS', material=None):
-    """A quad with a (0,0)-(1,1) UV, facing a three.js direction."""
+def screen(name, w, h, x, y, z, facing, coll='SCREENS', material=None, rot=None):
+    """A quad with a (0,0)-(1,1) UV, facing a three.js direction (or, with
+    `rot`, an explicit Blender-space euler override — a fanned/yawed screen,
+    same override pattern as bx() and cy())."""
     bm = bmesh.new()
     v = [bm.verts.new(p) for p in [(-w / 2, -h / 2, 0), (w / 2, -h / 2, 0), (w / 2, h / 2, 0), (-w / 2, h / 2, 0)]]
     f = bm.faces.new(v); uv = bm.loops.layers.uv.new('UVMap')
     for loop, t in zip(f.loops, [(0, 0), (1, 0), (1, 1), (0, 1)]): loop[uv].uv = t
-    return _finish(name, bm, coll, material or M['screenBack'], T(x, y, z), FACING[facing], smooth=False)
+    return _finish(name, bm, coll, material or M['screenBack'], T(x, y, z), rot if rot is not None else FACING[facing], smooth=False)
 
 def convert(ob):
     bpy.ops.object.select_all(action='DESELECT'); ob.select_set(True)
@@ -570,7 +572,13 @@ for side, sx in ((-1, ROW_CX - 1.95), (1, ROW_CX + 1.95)):
         yaw = (i - 1) * side * math.radians(20)
         zc = cz_ + (0.0 if i == 1 else -0.05)
         bx(f'monCFrame{tag}{i}', 0.42, 0.58, 0.14, cx_ + dx, cy_, zc - 0.03, 'MACHINES', M['metalDark'], rot=(0, 0, yaw))
-        bx(f'monCScreen{tag}{i}', 0.36, 0.48, 0.02, cx_ + dx, cy_, zc + 0.06, 'SHOP', M['screenBack'], rot=(0, 0, yaw), bevel=False)
+        # a real screen() now, not a painted static box — it was never
+        # getting any canvas content, just whatever the SHOP atlas baked.
+        # screen()'s own quad needs FACING['+z']'s tilt before a yaw means
+        # anything (unlike bx(), whose default already faces +z) — composed
+        # here rather than guessed, and checked against a render below.
+        screen_rot = tuple((Euler(FACING['+z']).to_matrix() @ Euler((0, 0, yaw)).to_matrix()).to_euler())
+        screen(f'monCScreen{tag}{i}', 0.36, 0.48, cx_ + dx, cy_, zc + 0.06, '+z', rot=screen_rot)
         screen_edge(f'monCEdge{tag}{i}', 0.32, cx_ + dx + math.sin(yaw) * 0.24, cy_ - 0.27, zc + 0.06 + (1 - math.cos(yaw)) * 0.24)
     cy(f'mastScreens{tag}', 0.06, 6.4, sx, R + 3.2, 1.15, 'MACHINES', M['metalDark'], seg=10)
 # the big screen on its stand
@@ -621,7 +629,10 @@ bx('junction2', 0.14, 0.35, 0.3, UX + 0.07, F + 2.4, 1.3, 'SHOP', M['metalDark']
 bx('meter', 0.2, 0.3, 0.3, UX + 0.1, F + 1.3, 1.1, 'SHOP', M['metalDark'])
 cy('meterDial', 0.1, 0.04, UX + 0.21, F + 1.3, 1.1, 'SHOP', M['white'], seg=14, axis='x')
 bx('acUnit', 0.45, 0.6, 0.7, UX + 0.22, F + 1.1, -2.6, 'SHOP', M['grey'])
-cy('acFan', 0.24, 0.05, UX + 0.46, F + 1.1, -2.6, 'SHOP', M['metalDark'], seg=18, axis='x')
+# DYNAMIC, not SHOP: a condenser fan that never turns reads as broken.
+# Keeps the wall-outward +x facing verified earlier — only the collection
+# changes, so the runtime can spin it independently of the baked wall.
+cy('acFan', 0.24, 0.05, UX + 0.46, F + 1.1, -2.6, 'DYNAMIC', M['metalDark'], seg=18, axis='x')
 tube('cableUtil', catenary((UX + 0.1, F + 2.9, -3.8), (UX + 0.1, F + 2.2, 1.8), 0.6, 12), 0.02, 'SHOP', M['black'])
 
 # a generator, floor-standing at the far end of the utility wall (the back

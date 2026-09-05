@@ -24,6 +24,16 @@ export type ScreenName =
   | 'littleTvScreen'
   | 'arcadeScreen'
   | 'vendScreen'
+  | 'monHScreenL'
+  | 'monHScreenR'
+  | 'monVScreenL'
+  | 'monVScreenR'
+  | 'monCScreenL0'
+  | 'monCScreenL1'
+  | 'monCScreenL2'
+  | 'monCScreenR0'
+  | 'monCScreenR1'
+  | 'monCScreenR2'
 
 export type AboutPage = 'intro' | 'skills' | 'process'
 
@@ -169,6 +179,21 @@ export function createScreens(): Screens {
     littleTvScreen: new Screen(96, 46, true),
     arcadeScreen: new Screen(256, 204, true),
     vendScreen: new Screen(512, 768),
+    // the terrace's two flanking "gaming monitor" towers — a horizontal
+    // benchmark-style readout on the bottom monitor of each, a scrolling
+    // chat feed on the vertical one above it
+    monHScreenL: new Screen(384, 192, true),
+    monHScreenR: new Screen(384, 192, true),
+    monVScreenL: new Screen(216, 488, true),
+    monVScreenR: new Screen(216, 488, true),
+    // the curved triple-monitor surrounds: a test-pattern sweep, one canvas
+    // per fanned segment
+    monCScreenL0: new Screen(160, 192, true),
+    monCScreenL1: new Screen(160, 192, true),
+    monCScreenL2: new Screen(160, 192, true),
+    monCScreenR0: new Screen(160, 192, true),
+    monCScreenR1: new Screen(160, 192, true),
+    monCScreenR2: new Screen(160, 192, true),
   }
   const state = { aboutPage: 'intro' as AboutPage, project: 0, creditsPage: 0, buttons: false, hover: null as string | null }
 
@@ -615,6 +640,87 @@ export function createScreens(): Screens {
     s.done()
   }
 
+  function drawMonH(s: Screen, t: number): void {
+    const { ctx, w, h } = s
+    ctx.fillStyle = '#05070d'
+    ctx.fillRect(0, 0, w, h)
+    ctx.strokeStyle = 'rgba(60,245,255,0.35)'
+    ctx.lineWidth = 1
+    for (let x = 0; x <= w; x += 16) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, h)
+      ctx.stroke()
+    }
+    ctx.beginPath()
+    ctx.strokeStyle = '#5cff8a'
+    ctx.lineWidth = 3
+    for (let x = 0; x <= w; x += 4) {
+      const y = h * 0.68 + Math.sin(x * 0.05 + t * 3) * h * 0.12 + Math.sin(x * 0.13 + t * 5) * h * 0.05
+      if (x === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.stroke()
+    ctx.fillStyle = '#f4f2ff'
+    ctx.font = `700 ${Math.round(h * 0.16)}px ${PIXEL}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+    const fps = 120 + Math.floor(Math.sin(t * 0.7) * 8)
+    ctx.fillText(`${fps} FPS`, w * 0.04, h * 0.06)
+    ctx.fillStyle = 'rgba(92,240,255,0.75)'
+    ctx.font = `600 ${Math.round(h * 0.09)}px ${PIXEL}`
+    ctx.fillText('1MS · 144HZ', w * 0.04, h * 0.3)
+    s.done()
+  }
+
+  const CHAT = ['viewer99: hype', 'gg_stef: nice save', 'anon: lol', 'p1xel: clip that', 'devfan: let’s go', 'guest42: first time here']
+  function drawMonV(s: Screen, t: number, phase: number): void {
+    const { ctx, w, h } = s
+    ctx.fillStyle = '#0a0716'
+    ctx.fillRect(0, 0, w, h)
+    ctx.fillStyle = 'rgba(255,138,42,0.9)'
+    ctx.font = `700 ${Math.round(w * 0.11)}px ${PIXEL}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('LIVE CHAT', w * 0.06, h * 0.05)
+    const lineH = h * 0.055
+    const total = CHAT.length * lineH * 2
+    const scrollY = ((t + phase) * h * 0.05) % total
+    ctx.font = `600 ${Math.round(lineH * 0.6)}px ${PIXEL}`
+    for (let i = 0; i < CHAT.length * 2; i++) {
+      const y = h - (scrollY - i * lineH)
+      if (y < lineH || y > h + lineH) continue
+      ctx.fillStyle = i % 2 ? 'rgba(92,240,255,0.85)' : 'rgba(244,242,255,0.85)'
+      ctx.fillText(CHAT[i % CHAT.length], w * 0.06, y)
+    }
+    s.done()
+  }
+
+  const BAR_COLORS = ['#ff2f9c', '#ff8c2a', '#ffd23a', '#41ff8f', '#28e7ff', '#7a3cff']
+  function drawMonC(s: Screen, t: number, phase: number): void {
+    const { ctx, w, h } = s
+    const bw = w / BAR_COLORS.length
+    BAR_COLORS.forEach((c, k) => {
+      ctx.fillStyle = c
+      ctx.fillRect(k * bw, 0, bw + 1, h)
+    })
+    const sweepY = ((t + phase) * h * 0.3) % (h * 1.4) - h * 0.2
+    const grad = ctx.createLinearGradient(0, sweepY - 30, 0, sweepY + 30)
+    grad.addColorStop(0, 'rgba(255,255,255,0)')
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.4)')
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, sweepY - 30, w, 60)
+    ctx.fillStyle = '#050509'
+    ctx.fillRect(0, h - 24, w, 24)
+    ctx.fillStyle = '#5cf0ff'
+    ctx.font = `700 ${Math.round((h - 24) * 0.5)}px ${PIXEL}`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('TEST PATTERN', w / 2, h - 12)
+    s.done()
+  }
+
   const staticImage = S.littleTvScreen.ctx.createImageData(S.littleTvScreen.w, S.littleTvScreen.h)
   function drawStatic(): void {
     const s = S.littleTvScreen
@@ -647,6 +753,12 @@ export function createScreens(): Screens {
   drawVend()
   drawArcade()
   drawClock()
+  drawMonH(S.monHScreenL, 0)
+  drawMonH(S.monHScreenR, 0)
+  drawMonV(S.monVScreenL, 0, 0)
+  drawMonV(S.monVScreenR, 0, 3)
+  const MON_C: ScreenName[] = ['monCScreenL0', 'monCScreenL1', 'monCScreenL2', 'monCScreenR0', 'monCScreenR1', 'monCScreenR2']
+  MON_C.forEach((name, i) => drawMonC(S[name], 0, i * 0.6))
   let rainAt = 0
 
   return {
@@ -662,6 +774,13 @@ export function createScreens(): Screens {
       }
       if (S.smallScreen4.due(t, 12)) drawBars(t)
       if (S.smallScreen5.due(t, 1)) drawClock()
+      if (S.monHScreenL.due(t, 12)) drawMonH(S.monHScreenL, t)
+      if (S.monHScreenR.due(t, 12)) drawMonH(S.monHScreenR, t)
+      if (S.monVScreenL.due(t, 12)) drawMonV(S.monVScreenL, t, 0)
+      if (S.monVScreenR.due(t, 12)) drawMonV(S.monVScreenR, t, 3)
+      MON_C.forEach((name, i) => {
+        if (S[name].due(t, 10)) drawMonC(S[name], t, i * 0.6)
+      })
       if (S.littleTvScreen.due(t, 12)) drawStatic()
     },
     setAboutPage(page) {

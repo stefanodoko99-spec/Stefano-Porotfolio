@@ -55,6 +55,64 @@ const HINTS: Record<Mode, string> = {
 }
 
 /**
+ * A brightness curve for an emissive mesh that otherwise held one flat
+ * colour forever: real neon hums and drifts, a filament flickers, a status
+ * LED blinks or breathes. `seed` is a per-object 0..1 derived from its own
+ * name (see `seedOf`), so a dozen instances of the same fixture do not all
+ * move in lockstep.
+ */
+type Pulse = (t: number, seed: number) => number
+
+function seedOf(name: string): number {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return (h % 1000) / 1000
+}
+
+/** a tube with an imperfect ballast: a slow wander, and an occasional brief stutter */
+const neonShimmer: Pulse = (t, seed) => {
+  const wander = 0.94 + 0.06 * Math.sin(t * 1.6 + seed * 40)
+  const cyclePos = (t * 0.35 + seed * 11) % 6
+  return wander * (cyclePos < 0.12 ? 0.4 : 1)
+}
+/** a warm filament bulb: soft, slow, uneven */
+const warmFlicker: Pulse = (t, seed) => 0.85 + 0.1 * Math.sin(t * 1.1 + seed * 20) + 0.05 * Math.sin(t * 3.7 + seed * 55)
+/** a fluorescent tube: faster and tighter than a filament */
+const fluoBuzz: Pulse = (t, seed) => 0.9 + 0.1 * Math.sin(t * 9 + seed * 30)
+/** a smooth status-LED breathe at a given speed */
+const breathe =
+  (speed: number): Pulse =>
+  (t, seed) => 0.55 + 0.45 * Math.sin(t * speed + seed * 6.283)
+/** a sharp on/mostly-off blink, attract-mode style, at a given period in seconds */
+const blink =
+  (period: number): Pulse =>
+  (t, seed) => (((t + seed * period) % period) < period * 0.12 ? 1 : 0.2)
+/** a punchy rhythmic pulse for a speaker */
+const bassPulse: Pulse = (t, seed) => {
+  const beat = (t * 2.1 + seed) % 1
+  return 0.35 + 0.65 * Math.max(0, Math.cos(beat * Math.PI * 2)) ** 3
+}
+
+/** matched against every emissive mesh's name, in order; the first match wins */
+const PULSE_RULES: [RegExp, Pulse][] = [
+  [/^neon(Kanji|Name|Open|Frame|Cone|ConeHatch\d|Scoop\d|Cherry)$/, neonShimmer],
+  [/^iceCreamSign$/, neonShimmer],
+  [/^battLabel$/, neonShimmer],
+  [/^lantern\d+$/, warmFlicker],
+  [/^ringLamp\d+$/, warmFlicker],
+  [/^lampBar\d+$/, warmFlicker],
+  [/^poleLed\d+$/, warmFlicker],
+  [/^fluoTube\d+$/, fluoBuzz],
+  [/^arcadeBtn[AB]$/, breathe(2.6)],
+  [/^arcadeCoin$/, blink(1.7)],
+  [/^vendBtn_/, breathe(2.2)],
+  [/^vendGlow$/, breathe(0.9)],
+  [/^battLed$/, breathe(0.75)],
+  [/^greenDot$/, blink(2.4)],
+  [/^jblLed$/, bassPulse],
+]
+
+/**
  * Where this scene's own assets live inside the Next app.
  *
  * This was `import.meta.env.BASE_URL`, which is Vite's and does not exist
@@ -196,6 +254,9 @@ export async function startShop(): Promise<() => void> {
   let genGreenBase: Color | null = null
   let genRedMaterial: MeshBasicMaterial | null = null
   let genRedBase: Color | null = null
+  const pulsers: { material: MeshBasicMaterial; base: Color; fn: Pulse; seed: number }[] = []
+  let hoveredPlateId: string | null = null
+  let acFan: Object3D | null = null
 
   shop.traverse((object) => {
     if (!(object instanceof Mesh)) return
@@ -238,6 +299,12 @@ export async function startShop(): Promise<() => void> {
         genRedMaterial = material
         genRedBase = base
       }
+      for (const [pattern, fn] of PULSE_RULES) {
+        if (pattern.test(name)) {
+          pulsers.push({ material, base, fn, seed: seedOf(name) })
+          break
+        }
+      }
       return
     }
     if (EMISSIVE.has(name)) console.warn(`ramen: emissive mesh "${name}" has no glow colour in the manifest; painted grey`)
@@ -260,6 +327,10 @@ export async function startShop(): Promise<() => void> {
     if (DYNAMIC.has(name)) {
       object.material = matcap
       if (/^fan\d$/.test(name)) fans.push(object)
+      // faces world +x (the utility wall's outward normal, checked against
+      // a render when it was added) — spins around that same axis, not Z
+      // like the roof fans, which face world ±z
+      if (name === 'acFan') acFan = object
       return
     }
     if (TEXT.has(name)) {
@@ -289,10 +360,9 @@ export async function startShop(): Promise<() => void> {
   )
 
   function hover(name: string | null): void {
-    plates.forEach((p, id) => {
-      const hot = name === `hit_${id}`
-      p.material.color.copy(p.base).multiplyScalar(hot ? 1.6 : 1)
-    })
+    // colour itself is set once a frame, below, alongside the plates' own
+    // idle breathe — this only records which one (if any) is hot
+    hoveredPlateId = name?.startsWith('hit_') ? name.slice(4) : null
     screens.setHover(name)
   }
 
@@ -397,6 +467,7 @@ export async function startShop(): Promise<() => void> {
     const dt = Math.min(clock.getDelta(), 0.25)
     time += dt
     for (const [i, fan] of fans.entries()) fan.rotateZ(dt * (i ? -7 : 9))
+    acFan?.rotateX(dt * 6)
     if (beaconMaterial && beaconBase) beaconMaterial.color.copy(beaconBase).multiplyScalar(0.55 + 0.45 * Math.sin(time * 2.4))
     // a bright pulse travels along the path and wraps rather than the whole
     // strip lighting in lockstep — a floor at 0.15 keeps the rest of the
@@ -423,6 +494,13 @@ export async function startShop(): Promise<() => void> {
     hologram.update(time)
     screens.update(time)
     interaction.update(dt)
+    for (const p of pulsers) p.material.color.copy(p.base).multiplyScalar(p.fn(time, p.seed))
+    // an idle breathe on the nav plates; the hovered one still snaps to a
+    // fixed, brighter highlight rather than breathing with the rest
+    const platePulse = 0.85 + 0.15 * Math.sin(time * 1.8)
+    plates.forEach((p, id) => {
+      p.material.color.copy(p.base).multiplyScalar(id === hoveredPlateId ? 1.6 : platePulse)
+    })
     if (bloom) bloom.render()
     else renderer.render(scene, camera)
     raf = requestAnimationFrame(frame)
